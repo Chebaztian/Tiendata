@@ -119,7 +119,7 @@ test('Gateway integra login, users, categories, products, inventory y audit logs
           id_usuario: 1,
           id_rol: 1,
           nombre: 'Administrador Demo',
-          correo: 'admin@stockerr.test',
+          correo: 'admin@tiendata.test',
           contrasena: bcrypt.hashSync('Admin1234', 10),
           estado: true,
           fecha_creacion: new Date().toISOString(),
@@ -227,7 +227,7 @@ test('Gateway integra login, users, categories, products, inventory y audit logs
     .set('Authorization', `Bearer ${adminToken}`)
     .send({
       nombre: 'Nuevo Usuario',
-      correo: 'nuevo@stockerr.test',
+      correo: 'nuevo@tiendata.test',
       contrasena: 'ClaveSegura123',
       id_rol: 2,
     });

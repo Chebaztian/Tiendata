@@ -1,5 +1,5 @@
 /**
- * Audit.jsx — Stockerr | MS-09 Frontend
+ * Audit.jsx — Tiendata | MS-09 Frontend
  * Vista: Auditoría y Trazabilidad
  *
  * Ruta:  /auditoria

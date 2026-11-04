@@ -1,6 +1,6 @@
 # Entregable Backend MS-09 - Auditoria y Trazabilidad e Integracion con Gateway
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Modulo principal:** MS-09 (Audit Service)  
 **Modulos integrados:** `auth-service`, `user-service`, `inventory-service`, `api-gateway`  
 **Fecha:** 2026-04-23

@@ -26,7 +26,7 @@ function createTestApp({
   return createApp({
     authMiddleware: createAuthMiddleware(user),
     exportDataSources: dataSources,
-    exportTempDir: path.join(os.tmpdir(), `stockerr-export-test-${randomUUID()}`),
+    exportTempDir: path.join(os.tmpdir(), `tiendata-export-test-${randomUUID()}`),
     exportNowProvider: () => '2026-05-04T12:00:00.000Z',
     fetchImpl,
   });
@@ -118,7 +118,7 @@ test('POST /api/export genera Excel con extension xlsx', async () => {
   await workbook.xlsx.load(response.body);
   assert.ok(workbook.getWorksheet('Resumen'));
   assert.ok(workbook.getWorksheet('Categorias'));
-  assert.equal(workbook.getWorksheet('Resumen').getCell('A1').value, 'STOCKERR - Exportacion de datos');
+  assert.equal(workbook.getWorksheet('Resumen').getCell('A1').value, 'TIENDATA - Exportacion de datos');
   assert.equal(workbook.getWorksheet('Categorias').getCell('A1').value, 'Categorias');
   assert.equal(workbook.getWorksheet('Categorias').getCell('A4').value, 'ID categoria');
 });

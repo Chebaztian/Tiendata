@@ -1,6 +1,6 @@
 # Guía de integración Frontend — MS-02 User Service
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Ámbito:** Consumo desde cliente web de la gestión de usuarios  
 **Última actualización:** 2026-04-08
 
@@ -44,7 +44,7 @@ Content-Type: application/json
 
 {
   "nombre": "Operador de Bodega",
-  "correo": "operador@stockerr.test",
+  "correo": "operador@tiendata.test",
   "contrasena": "ClaveSegura123",
   "id_rol": 2,
   "estado": "activo"
@@ -60,7 +60,7 @@ Content-Type: application/json
     "id_usuario": 10,
     "id_rol": 2,
     "nombre": "Operador de Bodega",
-    "correo": "operador@stockerr.test",
+    "correo": "operador@tiendata.test",
     "estado": true,
     "fecha_creacion": "2026-04-08T20:30:00.000Z",
     "ultimo_acceso": null,
@@ -93,7 +93,7 @@ GET /api/users?page=1&size=10&estado=activo
         "id_usuario": 1,
         "id_rol": 1,
         "nombre": "Administrador",
-        "correo": "admin@stockerr.test",
+        "correo": "admin@tiendata.test",
         "estado": true,
         "fecha_creacion": "2026-04-01T10:00:00.000Z",
         "ultimo_acceso": null,
@@ -128,7 +128,7 @@ Content-Type: application/json
     "id_usuario": 2,
     "id_rol": 2,
     "nombre": "Operador Turno Noche",
-    "correo": "operador@stockerr.test",
+    "correo": "operador@tiendata.test",
     "estado": false
   }
 }

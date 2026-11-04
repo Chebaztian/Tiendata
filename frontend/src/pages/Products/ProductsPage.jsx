@@ -1,5 +1,5 @@
 /**
- * ProductsPage.jsx — Stockerr | MS-04 Frontend
+ * ProductsPage.jsx — Tiendata | MS-04 Frontend
  * Vista: Gestión de Productos
  *
  * Ruta:        /productos

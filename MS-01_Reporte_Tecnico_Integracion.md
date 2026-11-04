@@ -1,6 +1,6 @@
 # MS-01 — Reporte de Hallazgos y Especificación Técnica de Integración
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Módulo:** MS-01 Servicio de Autenticación y Sesión  
 **Fecha:** 2026-04-04  
 **Estado:** Aprobado para implementación e integración con cliente web

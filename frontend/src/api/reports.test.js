@@ -9,7 +9,7 @@ import {
 describe('reports api helpers', () => {
   beforeEach(() => {
     localStorage.clear()
-    localStorage.setItem('stockerr_token', 'token-123')
+    localStorage.setItem('tiendata_token', 'token-123')
     vi.restoreAllMocks()
   })
 

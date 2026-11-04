@@ -1,6 +1,6 @@
 # Entregable Backend MS-12 - Servicio de Exportacion
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Modulo principal:** MS-12 (Export Service)  
 **Rama de trabajo:** `feature/MS-12-export-service`  
 **Base integrada:** `feature/MS-07-reports-service`  

@@ -1,6 +1,6 @@
 # Guia QA - Verificacion de MS-03 (Servicio de Gestion de Categorias)
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Alcance:** Validacion funcional y tecnica de CRUD de categorias, reglas de negocio, permisos y exposicion por API Gateway  
 **Ultima actualizacion:** 2026-04-10
 
@@ -28,7 +28,7 @@ cumple el contrato funcional de MS-03 para gestion de categorias, incluyendo:
 ## 2) Precondiciones
 
 1. Tener Node.js 18+ instalado.
-2. Estar ubicado en la raiz del repositorio (`stockerr1`).
+2. Estar ubicado en la raiz del repositorio (`tiendata`).
 3. Ejecutar instalacion de dependencias:
 
 ```bash

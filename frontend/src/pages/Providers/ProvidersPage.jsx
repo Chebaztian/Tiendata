@@ -1,5 +1,5 @@
 /**
- * ProvidersPage.jsx — Stockerr | MS-10 Frontend
+ * ProvidersPage.jsx — Tiendata | MS-10 Frontend
  * Vista: Gestión de Proveedores
  *
  * Ruta:        /proveedores

@@ -1,5 +1,5 @@
 /**
- * BarcodePage.jsx — Stockerr | MS-08 Frontend
+ * BarcodePage.jsx — Tiendata | MS-08 Frontend
  * Vista: Códigos de Barras
  *
  * Ruta:   /codigos-barras

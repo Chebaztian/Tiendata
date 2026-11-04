@@ -3,7 +3,7 @@
 const jwt = require('jsonwebtoken');
  
 /**
- * @fileoverview Utilidades JWT compartidas para todos los microservicios de INVENTARIO STOCKERR.
+ * @fileoverview Utilidades JWT compartidas para todos los microservicios de INVENTARIO TIENDATA.
  * Provee generación y verificación de tokens JWT firmados con HS256.
  *
  * Usado por:

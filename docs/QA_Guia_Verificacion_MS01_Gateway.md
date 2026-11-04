@@ -1,6 +1,6 @@
 # Guía QA — Verificación de MS-01 (Auth Service) + API Gateway
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Alcance:** Validación técnica del flujo de autenticación y protección de rutas  
 **Última actualización:** 2026-04-04
 
@@ -20,7 +20,7 @@ cumple el contrato funcional mínimo de autenticación, revocación y validació
 ## 2) Precondiciones
 
 1. Tener Node.js 18+ instalado.
-2. Estar ubicado en la raíz del repositorio (`stockerr1`).
+2. Estar ubicado en la raíz del repositorio (`tiendata`).
 3. Ejecutar bootstrap de dependencias:
 
 ```bash

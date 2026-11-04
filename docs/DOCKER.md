@@ -1,4 +1,4 @@
-# Guía Docker — STOCKERR Backend MS-01
+# Guía Docker — TIENDATA Backend MS-01
 
 ## Objetivo
 
@@ -23,8 +23,8 @@ Levantar un entorno reproducible para backend usando contenedores:
 ### `postgres`
 - Imagen: `postgres:16-alpine`
 - Puerto host: `5433` (interno del contenedor: `5432`)
-- Volumen persistente: `stockerr_pg_data`
-- Inicialización automática con backup: `docker/postgres/init/01_backup_stockerrbd.sql`
+- Volumen persistente: `tiendata_pg_data`
+- Inicialización automática con backup: `docker/postgres/init/01_backup_tiendatabd.sql`
 
 ## Inicialización de base de datos desde backup
 

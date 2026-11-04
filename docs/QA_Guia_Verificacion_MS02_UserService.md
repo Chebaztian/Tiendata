@@ -1,6 +1,6 @@
 # Guía QA — Verificación de MS-02 (User Service)
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Alcance:** Validación de gestión de usuarios (CRUD + reglas de negocio)  
 **Última actualización:** 2026-04-08
 
@@ -21,7 +21,7 @@ Verificar que `services/user-service` cumple los requisitos funcionales de MS-02
 ## 2) Precondiciones
 
 1. Tener Node.js 18+ instalado.
-2. Estar ubicado en la raíz del repositorio (`stockerr1`).
+2. Estar ubicado en la raíz del repositorio (`tiendata`).
 3. Ejecutar bootstrap:
 
 ```bash

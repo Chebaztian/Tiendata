@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * API Gateway de STOCKERR.
+ * API Gateway de TIENDATA.
  *
  * Punto de entrada único para el frontend. Resuelve:
  *   - Autenticación: delega en el auth-service (MS-01) la verificación del
@@ -92,7 +92,7 @@ function createApp(options = {}) {
   app.use(express.json());
 
   app.get('/', (_req, res) => {
-    res.json({ success: true, message: 'API Gateway STOCKERR activo 🚀' });
+    res.json({ success: true, message: 'API Gateway TIENDATA activo 🚀' });
   });
 
   const authMiddleware =

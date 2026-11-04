@@ -11,7 +11,7 @@ const BASE = '/api/users'
 
 // ── Obtener token del localStorage ───────────────────────────────
 function authHeaders() {
-  const token = localStorage.getItem('stockerr_token')
+  const token = localStorage.getItem('tiendata_token')
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

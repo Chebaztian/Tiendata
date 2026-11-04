@@ -1,6 +1,6 @@
 # Entregable Backend MS-03 — Servicio de Gestion de Categorias
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Módulo principal:** MS-03 (Category Service)  
 **Fecha:** 2026-04-10
 
@@ -35,7 +35,7 @@ Implementar el microservicio MS-03 para la gestion de categorias, incluyendo:
 - `api-gateway/src/routes/category.routes.js`
 - `api-gateway/src/app.js`
 - `docker-compose.yml`
-- `docker/postgres/init/01_backup_stockerrbd.sql`
+- `docker/postgres/init/01_backup_tiendatabd.sql`
 
 ## Reglas de negocio implementadas
 - No permite nombres duplicados sin importar mayusculas o minusculas

@@ -67,7 +67,7 @@ test('POST /api/audit/events registra evento y GET /api/audit/logs filtra por us
       },
       newData: {
         estado: true,
-        correo: 'nuevo@stockerr.test',
+        correo: 'nuevo@tiendata.test',
       },
       sessionId: 'session-test-001',
     }),

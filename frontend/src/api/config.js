@@ -1,5 +1,5 @@
 /**
- * config.js — Stockerr | MS-11 API Layer
+ * config.js — Tiendata | MS-11 API Layer
  *
  * Endpoints consumidos (API Gateway → localhost:3000):
  *   GET /api/config           → todos los parámetros del sistema
@@ -10,7 +10,7 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 function getToken() {
-  return localStorage.getItem('stockerr_token') ?? ''
+  return localStorage.getItem('tiendata_token') ?? ''
 }
 
 function extractErrorMessage(data) {

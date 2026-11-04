@@ -1,16 +1,18 @@
+name: tiendata
+
 services:
   auth-service:
     build:
       context: ./services/auth-service
       dockerfile: Dockerfile
-    container_name: stockerr-auth-service
+    container_name: tiendata-auth-service
     environment:
       PORT: 3002
-      JWT_SECRET: stockerr-dev-secret
+      JWT_SECRET: tiendata-dev-secret
       JWT_EXPIRES_IN: 30m
       MAX_LOGIN_ATTEMPTS: 3
       LOCK_TIME_MINUTES: 15
-      DEMO_USER_EMAIL: admin@stockerr.com
+      DEMO_USER_EMAIL: admin@tiendata.com
       DEMO_USER_PASSWORD: Admin1234
       DEMO_USER_NAME: Administrador Demo
       DEMO_USER_ROLE: Administrador
@@ -18,8 +20,8 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
     ports:
       - "3002:3002"
     depends_on:
@@ -31,14 +33,14 @@ services:
     build:
       context: .
       dockerfile: services/product-service/Dockerfile
-    container_name: stockerr-product-service
+    container_name: tiendata-product-service
     environment:
       PORT: 3001
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
     ports:
       - "3001:3001"
     depends_on:
@@ -50,14 +52,14 @@ services:
     build:
       context: .
       dockerfile: services/category-service/Dockerfile
-    container_name: stockerr-category-service
+    container_name: tiendata-category-service
     environment:
       PORT: 3003
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
     ports:
       - "3003:3003"
     depends_on:
@@ -69,14 +71,14 @@ services:
     build:
       context: ./services/user-service
       dockerfile: Dockerfile
-    container_name: stockerr-user-service
+    container_name: tiendata-user-service
     environment:
       PORT: 3004
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
       MS09_AUDIT_WEBHOOK_URL: http://audit-service:3006/api/audit/events
     ports:
       - "3004:3004"
@@ -89,15 +91,15 @@ services:
     build:
       context: .
       dockerfile: services/inventory-service/Dockerfile
-    container_name: stockerr-inventory-service
+    container_name: tiendata-inventory-service
     environment:
       PORT: 3005
       AUTH_SERVICE_URL: http://auth-service:3002
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
       MS06_MOVEMENT_WEBHOOK_URL: ""
       MS09_MOVEMENT_WEBHOOK_URL: http://audit-service:3006/api/audit/events
     ports:
@@ -113,15 +115,15 @@ services:
     build:
       context: .
       dockerfile: services/audit-service/Dockerfile
-    container_name: stockerr-audit-service
+    container_name: tiendata-audit-service
     environment:
       PORT: 3006
       AUTH_SERVICE_URL: http://auth-service:3002
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
     ports:
       - "3006:3006"
     depends_on:
@@ -135,7 +137,7 @@ services:
     build:
       context: .
       dockerfile: services/export-service/Dockerfile
-    container_name: stockerr-export-service
+    container_name: tiendata-export-service
     environment:
       PORT: 3007
       AUTH_SERVICE_URL: http://auth-service:3002
@@ -144,8 +146,8 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
     ports:
       - "3007:3007"
     depends_on:
@@ -165,14 +167,14 @@ services:
     build:
       context: .
       dockerfile: services/supplier-service/Dockerfile
-    container_name: stockerr-supplier-service
+    container_name: tiendata-supplier-service
     environment:
       PORT: 3008
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
     ports:
       - "3008:3008"
     depends_on:
@@ -184,14 +186,14 @@ services:
     build:
       context: .
       dockerfile: services/config-service/Dockerfile
-    container_name: stockerr-config-service
+    container_name: tiendata-config-service
     environment:
       PORT: 3009
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
     ports:
       - "3009:3009"
     depends_on:
@@ -203,14 +205,14 @@ services:
     build:
       context: .
       dockerfile: services/barcode-service/Dockerfile
-    container_name: stockerr-barcode-service
+    container_name: tiendata-barcode-service
     environment:
       PORT: 3010
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: stockerr
-      DB_NAME: stockerr
+      DB_PASSWORD: tiendata
+      DB_NAME: tiendata
     ports:
       - "3010:3010"
     depends_on:
@@ -222,7 +224,7 @@ services:
     build:
       context: .
       dockerfile: api-gateway/Dockerfile
-    container_name: stockerr-api-gateway
+    container_name: tiendata-api-gateway
     environment:
       PORT: 3000
       AUTH_SERVICE_URL: http://auth-service:3002
@@ -263,22 +265,22 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: stockerr-postgres
+    container_name: tiendata-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: stockerr
-      POSTGRES_DB: stockerr
+      POSTGRES_PASSWORD: tiendata
+      POSTGRES_DB: tiendata
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d stockerr"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tiendata"]
       interval: 5s
       timeout: 3s
       retries: 10
     volumes:
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
-      - stockerr_pg_data:/var/lib/postgresql/data
+      - tiendata_pg_data:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
-  stockerr_pg_data:
+  tiendata_pg_data:

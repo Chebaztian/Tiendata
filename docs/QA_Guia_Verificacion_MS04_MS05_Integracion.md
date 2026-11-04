@@ -1,6 +1,6 @@
 # Guia QA - Verificacion de MS-04 + MS-05 e Integracion por API Gateway
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Alcance:** Validacion funcional y tecnica de productos, movimientos de inventario y exposicion integrada por API Gateway  
 **Ultima actualizacion:** 2026-04-18
 
@@ -28,7 +28,7 @@ cumple el contrato funcional para:
 ## 2) Precondiciones
 
 1. Tener Docker y Docker Compose disponibles.
-2. Estar ubicado en la raiz del repositorio `stockerr1-real`.
+2. Estar ubicado en la raiz del repositorio `tiendata`.
 3. Levantar entorno limpio para aplicar cambios SQL y servicios:
 
 ```bash
@@ -47,7 +47,7 @@ docker compose up --build
 5. Usuario administrador demo esperado tras inicializacion:
 
 ```text
-correo: admin@stockerr.com
+correo: admin@tiendata.com
 nombre_usuario: admin
 contrasena: Admin1234
 ```
@@ -134,7 +134,7 @@ Content-Type: application/json
 
 {
   "nombre": "Operador Uno",
-  "correo": "operador1@stockerr.test",
+  "correo": "operador1@tiendata.test",
   "contrasena": "Operador123",
   "id_rol": 2
 }

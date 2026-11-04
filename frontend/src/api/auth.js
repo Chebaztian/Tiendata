@@ -4,7 +4,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 // Clave del token JWT en localStorage — compartida con AuthContext
-const TOKEN_KEY = 'stockerr_token'
+const TOKEN_KEY = 'tiendata_token'
 
 export async function loginRequest(correo, contrasena) {
   let response
