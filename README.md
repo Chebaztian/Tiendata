@@ -1,20 +1,27 @@
-# TIENDATA — Backend MS-01
+# TIENDATA — Sistema de Gestión y Control de Inventarios
 
-Implementación backend para **MS-01 Servicio de Autenticación y Sesión** con integración por API Gateway y utilidades compartidas.
+Arquitectura de microservicios (Node.js + Express + PostgreSQL) con un API Gateway
+único y un frontend en React (Vite).
 
-## Componentes incluidos
+## Componentes
 
-- `services/auth-service` (login/logout/refresh/verify)
-- `api-gateway` (pasarela para consumo de cliente web)
-- `shared` (roles, respuestas, JWT, manejo de errores)
-- `docker-compose.yml` para levantar entorno local con contenedores
+| Componente | Puerto | Descripción |
+|---|---|---|
+| `frontend` | 5173 | React + Vite (proxy `/api` → gateway) |
+| `api-gateway` | 3000 | Punto de entrada único, valida JWT y rol |
+| `services/auth-service` (MS-01) | 3002 | Login, logout, refresh, verify |
+| `services/user-service` (MS-02) | 3004 | Gestión de usuarios |
+| demás `services/*` | 3001-3010 | Categorías, productos, inventario, auditoría, etc. |
+| `postgres` | 5433 | PostgreSQL 16 (`tiendata`) |
+| `shared` | — | Roles, respuestas, JWT, manejo de errores |
 
 ## Requisitos
 
 - Docker Desktop (o Docker Engine + Docker Compose)
-- Puertos libres: `3000`, `3002`, `5433`
+- Node.js 20+ para el frontend
+- Puertos libres: `3000-3010`, `5433`, `5173`
 
-## Levantar entorno con Docker
+## Levantar el entorno
 
 Desde la raíz del repositorio:
 
@@ -22,49 +29,67 @@ Desde la raíz del repositorio:
 docker compose up --build
 ```
 
-La base de datos se inicializa automáticamente con el backup SQL ubicado en:
+En otra terminal, el frontend:
 
-`docker/postgres/init/01_backup_tiendatabd.sql`
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Abrir http://localhost:5173 e ingresar con:
+
+| Usuario | Correo | Contraseña |
+|---|---|---|
+| `admin` | `admin@tiendata.com` | `Admin1234` |
+
+La base de datos se inicializa con los scripts de `docker/postgres/init/`
+(en orden): `01_backup_tiendatabd.sql`, `02_parametros_sistema.sql`,
+`03_auth_sesiones.sql`.
+
+> PostgreSQL solo ejecuta esos scripts cuando el volumen está vacío.
+> Para reinicializar: `docker compose down -v` y luego `docker compose up --build`.
+>
+> Si ya tenías un volumen creado antes de `03_auth_sesiones.sql`, aplicalo sin
+> perder datos (es idempotente):
+>
+> ```bash
+> docker exec -i tiendata-postgres psql -U postgres -d tiendata < docker/postgres/init/03_auth_sesiones.sql
+> ```
 
 ## Verificar funcionamiento
 
-### 1) Health básico
-
 ```bash
+# Health
 curl http://localhost:3000/
 curl http://localhost:3002/
-```
 
-### 2) Login
-
-```bash
+# Login (con usuario o correo)
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"nombre_usuario":"admin","contrasena":"Admin1234"}'
+  -d '{"identificador":"admin","contrasena":"Admin1234"}'
 ```
 
-### 3) Apagar contenedores
+Pruebas automáticas:
 
 ```bash
-docker compose down
+npm --prefix services/auth-service test   # MS-01
+npm --prefix api-gateway test             # gateway
+npm --prefix frontend test                # frontend (Vitest)
 ```
 
-Para eliminar también volumen de base de datos:
+## Apagar
 
 ```bash
-docker compose down -v
+docker compose down        # conserva la BD
+docker compose down -v     # borra también el volumen tiendata_pg_data
 ```
-
-> Importante: PostgreSQL solo ejecuta los scripts de `docker-entrypoint-initdb.d` cuando el volumen está vacío. Si querés reimportar el backup, usá `docker compose down -v` y luego `docker compose up --build`.
-
-## Notas de alcance
-
-- Este compose deja operativo el **backend MS-01 + gateway + PostgreSQL**.
-- El `auth-service` actual funciona con repositorio en memoria para autenticación demo y deja preparada la configuración de base de datos para iteración siguiente.
 
 ## Documentación técnica
 
+- `docs/MS01_Autenticacion_Sesion.md` — funcionamiento actual del login y la sesión
 - `docs/Backend_Entregable_MS01.md`
 - `docs/QA_Guia_Verificacion_MS01_Gateway.md`
 - `docs/Frontend_Integracion_MS01_Gateway.md`
+- `docs/DOCKER.md`
 - `MS-01_Reporte_Tecnico_Integracion.md`
