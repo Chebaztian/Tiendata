@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { loginRequest } from '../../api/auth'
 import { useAuth } from '../../hooks/useAuth'
 import logo from '../../assets/images/logo.svg'
-import './Login.css'
+import './login.css'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, sessionMessage, clearSessionMessage } = useAuth()
 
-  const [formData, setFormData] = useState({ correo: '', contrasena: '' })
+  const [formData, setFormData] = useState({ identificador: '', contrasena: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -19,13 +19,15 @@ export default function Login() {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
     if (errorMsg) setErrorMsg('')
+    if (sessionMessage) clearSessionMessage()
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setErrorMsg('')
+    clearSessionMessage()
 
-    if (!formData.correo.trim() || !formData.contrasena) {
+    if (!formData.identificador.trim() || !formData.contrasena) {
       setErrorMsg('Por favor completa todos los campos.')
       setErrorType('error')
       return
@@ -33,12 +35,12 @@ export default function Login() {
 
     setIsLoading(true)
     try {
-      const data = await loginRequest(formData.correo.trim(), formData.contrasena)
+      const data = await loginRequest(formData.identificador.trim(), formData.contrasena)
       login(data.data)
       navigate(data.data.rol === 'Administrador' ? '/dashboard/admin' : '/dashboard', { replace: true })
     } catch (err) {
       const message = err.message || 'Error desconocido.'
-      setErrorType(message.includes('bloqueada') ? 'warning' : 'error')
+      setErrorType(err.status === 423 || err.status === 403 ? 'warning' : 'error')
       setErrorMsg(message)
     } finally {
       setIsLoading(false)
@@ -46,6 +48,8 @@ export default function Login() {
   }
 
   const hasError = !!errorMsg
+  // Aviso de sesión finalizada (expiró, inactividad, otra pestaña)
+  const notice = hasError ? null : sessionMessage
 
   return (
     <>
@@ -92,16 +96,34 @@ export default function Login() {
             </div>
           )}
 
+          {notice && (
+            <div className="error-message warning" role="status">
+              <span className="error-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </span>
+              <div>
+                <strong>Sesión finalizada</strong><br />
+                {notice}
+              </div>
+            </div>
+          )}
+
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <div className="form-group">
-              <label htmlFor="correo">Correo electrónico</label>
+              <label htmlFor="identificador">Correo o usuario</label>
               <input
-                id="correo"
-                name="correo"
-                type="email"
-                autoComplete="email"
-                placeholder="usuario@ejemplo.com"
-                value={formData.correo}
+                id="identificador"
+                name="identificador"
+                type="text"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="usuario@ejemplo.com o usuario"
+                value={formData.identificador}
                 onChange={handleChange}
                 disabled={isLoading}
                 className={hasError ? 'input-error' : ''}
