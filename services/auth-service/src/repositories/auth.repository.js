@@ -1,25 +1,31 @@
+/**
+ * Repositorio en memoria (modo demo sin BD y pruebas).
+ * Misma interfaz que PgAuthRepository.
+ */
 class InMemoryAuthRepository {
   constructor({ users = [] } = {}) {
-    this.usersByCorreo = new Map();
-    this.usersByUsername = new Map();
-    this.usersById = new Map();
+    this.users = users.map((user) => ({
+      intentos_fallidos: 0,
+      bloqueo_hasta: null,
+      ...user,
+    }));
     this.revokedTokens = new Map();
-
-    users.forEach((user) => {
-      this.usersByCorreo.set(user.correo, { ...user });
-      this.usersById.set(user.id_usuario, this.usersByCorreo.get(user.correo));
-      if (user.nombre_usuario) {
-        this.usersByUsername.set(user.nombre_usuario, this.usersByCorreo.get(user.correo));
-      }
-    });
-  }
-
-  async getUserByCorreo(correo) {
-    return this.usersByCorreo.get(correo) || null;
   }
 
   async getUserByIdentifier(identifier) {
-    return this.usersByCorreo.get(identifier) || this.usersByUsername.get(identifier) || null;
+    if (!identifier) return null;
+    const value = String(identifier).toLowerCase();
+    return (
+      this.users.find((user) => user.correo && user.correo.toLowerCase() === value) ||
+      this.users.find(
+        (user) => user.nombre_usuario && user.nombre_usuario.toLowerCase() === value
+      ) ||
+      null
+    );
+  }
+
+  async getUserByCorreo(correo) {
+    return this.getUserByIdentifier(correo);
   }
 
   async registerFailedAttempt(user, maxLoginAttempts, lockMinutes) {
@@ -31,7 +37,7 @@ class InMemoryAuthRepository {
       return { blocked: true, blockedUntil: user.bloqueo_hasta };
     }
 
-    return { blocked: false };
+    return { blocked: false, remainingAttempts: maxLoginAttempts - user.intentos_fallidos };
   }
 
   async resetFailedAttempts(user) {
@@ -39,18 +45,18 @@ class InMemoryAuthRepository {
     user.bloqueo_hasta = null;
   }
 
-  async revokeToken(token, expiresAtMs) {
-    this.revokedTokens.set(token, expiresAtMs);
+  async revokeToken({ jti, expiresAtMs }) {
+    this.revokedTokens.set(jti, expiresAtMs);
   }
 
-  async isTokenRevoked(token) {
-    const expiresAt = this.revokedTokens.get(token);
+  async isTokenRevoked(jti) {
+    const expiresAt = this.revokedTokens.get(jti);
     if (!expiresAt) {
       return false;
     }
 
     if (Date.now() > expiresAt) {
-      this.revokedTokens.delete(token);
+      this.revokedTokens.delete(jti);
       return false;
     }
 

@@ -42,6 +42,29 @@ class AuthAuditNotifier {
     });
   }
 
+  async notifyLogout({ user, sessionId }) {
+    await this.post({
+      action: 'logout',
+      module: 'auth',
+      entity: 'sesion',
+      entityId: user?.id_usuario,
+      user: user
+        ? {
+            id_usuario: user.id_usuario,
+            nombre: user.nombre,
+            rol: user.rol,
+          }
+        : undefined,
+      detail: {
+        resultado: 'exitoso',
+      },
+      newData: {
+        autenticado: false,
+      },
+      sessionId,
+    });
+  }
+
   async notifyLoginFailure({ user, identifier, reason }) {
     await this.post({
       action: 'login_fallido',

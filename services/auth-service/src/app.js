@@ -26,6 +26,25 @@ function createDefaultUser() {
   };
 }
 
+const DEV_JWT_SECRET = 'tiendata-dev-secret';
+
+/**
+ * En producción JWT_SECRET es obligatorio: un secreto por defecto permitiría
+ * a cualquiera firmar tokens válidos. En desarrollo se usa uno fijo con aviso.
+ */
+function resolveJwtSecret(explicitSecret) {
+  const secret = explicitSecret || process.env.JWT_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET es obligatorio en producción');
+  }
+  if (!resolveJwtSecret.warned) {
+    console.warn('⚠️  JWT_SECRET no definido: usando secreto de desarrollo. No usar en producción.');
+    resolveJwtSecret.warned = true;
+  }
+  return DEV_JWT_SECRET;
+}
+
 function buildRepository(options) {
   if (options.repository) return options.repository;
   if (options.seedUsers) return new InMemoryAuthRepository({ users: options.seedUsers });
@@ -50,8 +69,7 @@ function createApp(options = {}) {
     new AuthService({
       repository,
       auditNotifier,
-      jwtSecret:
-        options.serviceOptions?.jwtSecret || process.env.JWT_SECRET || 'change-me-in-production',
+      jwtSecret: resolveJwtSecret(options.serviceOptions?.jwtSecret),
       jwtExpiresIn:
         options.serviceOptions?.jwtExpiresIn || process.env.JWT_EXPIRES_IN || '30m',
       maxLoginAttempts:
@@ -72,11 +90,14 @@ function createApp(options = {}) {
   app.use('/api/auth', createAuthRoutes(controller));
 
   app.use((err, _req, res, _next) => {
-    res.status(err.status || 500).json({
+    const status = err.status || (err.type === 'entity.parse.failed' ? 400 : 500);
+    if (status >= 500) console.error('[auth-service]', err);
+    res.status(status).json({
       success: false,
       error: {
-        code: err.code || 'INTERNAL_ERROR',
-        message: err.message || 'Error interno del servidor',
+        code: err.code || (status < 500 ? 'BAD_REQUEST' : 'INTERNAL_ERROR'),
+        message: status < 500 ? err.message : 'Error interno del servidor',
+        ...(err.details ? { details: err.details } : {}),
       },
     });
   });
@@ -84,4 +105,4 @@ function createApp(options = {}) {
   return app;
 }
 
-module.exports = { createApp };
+module.exports = { createApp, resolveJwtSecret };

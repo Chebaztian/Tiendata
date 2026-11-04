@@ -1,112 +1,162 @@
 'use strict';
+
+const DEFAULT_MAX_LOGIN_ATTEMPTS = 3;
+const DEFAULT_LOCK_MINUTES = 15;
+
+function toMillis(value) {
+  if (value === null || value === undefined) return null;
+  const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
+  return Number.isNaN(time) ? null : time;
+}
+
+/**
+ * Repositorio de autenticación sobre PostgreSQL.
+ *
+ * Todo el estado de sesión vive en la BD para sobrevivir reinicios del
+ * servicio y funcionar con varias instancias:
+ *   - usuarios.intentos_fallidos / bloqueado / bloqueo_hasta
+ *   - tokens_revocados (jti + expiración)
+ * Requiere docker/postgres/init/03_auth_sesiones.sql.
+ */
 class PgAuthRepository {
   constructor({ pool }) {
     this.pool = pool;
-    this.revokedTokens = new Map();
-    this.lockUntil = new Map();
   }
 
-  async getUserByCorreo(correo) {
+  mapUser(row) {
+    const bloqueoHasta = toMillis(row.bloqueo_hasta);
+    let lockedUntil = null;
+    if (row.bloqueado) {
+      // Sin fecha de fin => bloqueo indefinido (manual)
+      lockedUntil = bloqueoHasta ?? Number.POSITIVE_INFINITY;
+    }
+
+    return {
+      id_usuario: row.id_usuario,
+      correo: row.correo,
+      nombre_usuario: row.nombre_usuario,
+      nombre: row.nombre,
+      rol: row.rol,
+      contrasena_hash: row.contrasena_hash,
+      estado: row.estado === true || row.estado === 'activo' ? 'activo' : 'inactivo',
+      intentos_fallidos: row.intentos_fallidos ?? 0,
+      bloqueo_hasta: lockedUntil,
+    };
+  }
+
+  async getUserByIdentifier(identifier) {
     const query = `
       SELECT
         u.id_usuario,
         u.correo,
+        u.nombre_usuario,
         u.nombre,
         r.nombre_rol      AS rol,
         u.contrasena      AS contrasena_hash,
         u.estado,
         u.intentos_fallidos,
-        u.bloqueado
+        u.bloqueado,
+        u.bloqueo_hasta
       FROM usuarios u
       JOIN roles r ON r.id_rol = u.id_rol
-      WHERE u.correo = $1
+      WHERE lower(u.correo) = lower($1)
+         OR lower(u.nombre_usuario) = lower($1)
+      ORDER BY (lower(u.correo) = lower($1)) DESC
       LIMIT 1
     `;
-    const { rows } = await this.pool.query(query, [correo]);
-    if (!rows[0]) return null;
-    const row = rows[0];
-    let bloqueo_hasta = this.lockUntil.get(row.id_usuario) ?? null;
-    if (row.bloqueado && bloqueo_hasta === null) {
-      bloqueo_hasta = Date.now() + 99 * 365 * 24 * 60 * 60 * 1000;
-    }
-    return {
-      id_usuario:        row.id_usuario,
-      correo:            row.correo,
-      nombre:            row.nombre,
-      rol:               row.rol,
-      contrasena_hash:   row.contrasena_hash,
-      estado:            row.estado === true || row.estado === 'activo' ? 'activo' : 'inactivo',
-      intentos_fallidos: row.intentos_fallidos,
-      bloqueo_hasta,
-    };
+    const { rows } = await this.pool.query(query, [identifier]);
+    return rows[0] ? this.mapUser(rows[0]) : null;
   }
 
-  async getUserByIdentifier(identifier) {
-    return this.getUserByCorreo(identifier);
+  async getUserByCorreo(correo) {
+    return this.getUserByIdentifier(correo);
   }
 
   async registerFailedAttempt(user, maxLoginAttempts, lockMinutes) {
-    user.intentos_fallidos += 1;
-    if (user.intentos_fallidos >= maxLoginAttempts) {
-      const bloqueo_hasta = Date.now() + lockMinutes * 60 * 1000;
-      this.lockUntil.set(user.id_usuario, bloqueo_hasta);
-      user.bloqueo_hasta = bloqueo_hasta;
-      user.intentos_fallidos = 0;
-      await this.pool.query(
-        'UPDATE usuarios SET intentos_fallidos = 0, bloqueado = true WHERE id_usuario = $1',
-        [user.id_usuario]
-      );
-      return { blocked: true, blockedUntil: bloqueo_hasta };
-    }
-    await this.pool.query(
-      'UPDATE usuarios SET intentos_fallidos = $1 WHERE id_usuario = $2',
-      [user.intentos_fallidos, user.id_usuario]
+    // Incremento atómico: evita perder intentos con peticiones concurrentes
+    const { rows } = await this.pool.query(
+      `UPDATE usuarios
+          SET intentos_fallidos = COALESCE(intentos_fallidos, 0) + 1
+        WHERE id_usuario = $1
+        RETURNING intentos_fallidos`,
+      [user.id_usuario]
     );
-    return { blocked: false };
+    const attempts = rows[0]?.intentos_fallidos ?? user.intentos_fallidos + 1;
+    user.intentos_fallidos = attempts;
+
+    if (attempts < maxLoginAttempts) {
+      return { blocked: false, remainingAttempts: maxLoginAttempts - attempts };
+    }
+
+    const locked = await this.pool.query(
+      `UPDATE usuarios
+          SET intentos_fallidos = 0,
+              bloqueado = true,
+              bloqueo_hasta = now() + make_interval(mins => $2::int)
+        WHERE id_usuario = $1
+        RETURNING bloqueo_hasta`,
+      [user.id_usuario, lockMinutes]
+    );
+    const blockedUntil =
+      toMillis(locked.rows[0]?.bloqueo_hasta) ?? Date.now() + lockMinutes * 60 * 1000;
+    user.intentos_fallidos = 0;
+    user.bloqueo_hasta = blockedUntil;
+    return { blocked: true, blockedUntil };
   }
 
   async resetFailedAttempts(user) {
-    this.lockUntil.delete(user.id_usuario);
     user.intentos_fallidos = 0;
     user.bloqueo_hasta = null;
     await this.pool.query(
-      'UPDATE usuarios SET intentos_fallidos = 0, bloqueado = false WHERE id_usuario = $1',
+      `UPDATE usuarios
+          SET intentos_fallidos = 0,
+              bloqueado = false,
+              bloqueo_hasta = NULL,
+              ultimo_acceso = now()
+        WHERE id_usuario = $1`,
       [user.id_usuario]
     );
   }
 
-  async revokeToken(token, expiresAtMs) {
-    this.revokedTokens.set(token, expiresAtMs);
+  async revokeToken({ jti, expiresAtMs, idUsuario = null }) {
+    await this.pool.query(
+      `INSERT INTO tokens_revocados (jti, id_usuario, expira_en)
+       VALUES ($1, $2, to_timestamp($3 / 1000.0))
+       ON CONFLICT (jti) DO NOTHING`,
+      [jti, idUsuario, expiresAtMs]
+    );
+    // Limpieza oportunista: los tokens expirados ya no necesitan lista negra
+    await this.pool.query('DELETE FROM tokens_revocados WHERE expira_en < now()');
   }
 
-  async isTokenRevoked(token) {
-    const expiresAt = this.revokedTokens.get(token);
-    if (!expiresAt) return false;
-    if (Date.now() > expiresAt) {
-      this.revokedTokens.delete(token);
-      return false;
+  async isTokenRevoked(jti) {
+    const { rows } = await this.pool.query(
+      'SELECT 1 FROM tokens_revocados WHERE jti = $1 AND expira_en > now() LIMIT 1',
+      [jti]
+    );
+    return rows.length > 0;
+  }
+
+  async getParam(key, fallback) {
+    try {
+      const { rows } = await this.pool.query(
+        'SELECT valor FROM parametros_sistema WHERE clave = $1 LIMIT 1',
+        [key]
+      );
+      const value = rows[0] ? parseInt(rows[0].valor, 10) : NaN;
+      if (Number.isInteger(value) && value > 0) return value;
+    } catch (_) {
+      // Tabla no disponible: se usa el valor por defecto
     }
-    return true;
+    return fallback;
   }
 
   async getMaxLoginAttempts() {
-    try {
-      const { rows } = await this.pool.query(
-        "SELECT valor FROM parametros_sistema WHERE clave = 'max_intentos_login' LIMIT 1"
-      );
-      if (rows[0]) return parseInt(rows[0].valor, 10);
-    } catch (_) {}
-    return 3;
+    return this.getParam('max_intentos_login', DEFAULT_MAX_LOGIN_ATTEMPTS);
   }
 
   async getLockMinutes() {
-    try {
-      const { rows } = await this.pool.query(
-        "SELECT valor FROM parametros_sistema WHERE clave = 'tiempo_bloqueo_minutos' LIMIT 1"
-      );
-      if (rows[0]) return parseInt(rows[0].valor, 10);
-    } catch (_) {}
-    return 15;
+    return this.getParam('tiempo_bloqueo_minutos', DEFAULT_LOCK_MINUTES);
   }
 }
 
