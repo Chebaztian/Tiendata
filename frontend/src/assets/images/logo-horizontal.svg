@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-label="Tiendata">
+  <title>Tiendata</title>
+  <g>
+  <defs>
+    <linearGradient id="td-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1E3A8A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#td-bg)"/>
+  <!-- T y D en una sola forma: el fuste de la T es el lado recto de la D -->
+  <path d="M8 13 H36 A19 19 0 0 1 36 51 H18 V21 H8 Z M26 21 V43 H36 A11 11 0 0 0 36 21 Z" fill="#FFFFFF" fill-rule="evenodd"/>
+  <!-- data: barras ascendentes dentro de la D -->
+  <rect x="29" y="34" width="3.2" height="6" rx="1" fill="#34D399"/>
+  <rect x="33.6" y="30" width="3.2" height="10" rx="1" fill="#34D399"/>
+  <rect x="38.2" y="26" width="3.2" height="14" rx="1" fill="#34D399"/>
+  </g>
+  <text x="78" y="44" font-family="Poppins, 'Segoe UI', Inter, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-0.5"><tspan fill="#0F172A">Tien</tspan><tspan fill="#2563EB">data</tspan></text>
+</svg>
