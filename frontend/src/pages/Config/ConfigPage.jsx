@@ -1,5 +1,5 @@
 /**
- * ConfigPage.jsx — Stockerr | MS-11 Frontend
+ * ConfigPage.jsx — Tiendata | MS-11 Frontend
  * Vista: Configuración del sistema
  *
  * Ruta:  /configuracion

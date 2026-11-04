@@ -1,7 +1,7 @@
 --
 -- Tabla de parámetros del sistema (clave-valor)
 -- Creada para MS-11 Config Service
--- Se ejecuta después de 01_backup_stockerrbd.sql
+-- Se ejecuta después de 01_backup_tiendatabd.sql
 --
 
 -- NOTA: PostgreSQL solo ejecuta los scripts en docker-entrypoint-initdb.d

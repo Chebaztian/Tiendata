@@ -1,6 +1,6 @@
 # Entregable Backend MS-04 + MS-05 — Productos, Movimientos de Inventario e Integracion por API Gateway
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Modulos principales:** MS-04 (Product Service), MS-05 (Inventory Movements Service), API Gateway  
 **Fecha:** 2026-04-18
 
@@ -245,7 +245,7 @@ Tambien se agregaron Dockerfiles faltantes para:
 
 ### Script SQL
 
-Se ajusto `docker/postgres/init/01_backup_stockerrbd.sql` para:
+Se ajusto `docker/postgres/init/01_backup_tiendatabd.sql` para:
 
 - corregir el `INSERT` final del usuario demo usando `public.usuarios`
 - evitar fallo por conflicto con `ON CONFLICT (correo) DO NOTHING`

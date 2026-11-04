@@ -1,5 +1,5 @@
 /**
- * products.js — Stockerr | MS-04 API Layer
+ * products.js — Tiendata | MS-04 API Layer
  *
  * Endpoints consumidos (API Gateway → localhost:3000):
  *   GET    /api/products?nombre=&id_categoria=&codigo=&page=&size=
@@ -16,7 +16,7 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 function getToken() {
-  return localStorage.getItem('stockerr_token') ?? ''
+  return localStorage.getItem('tiendata_token') ?? ''
 }
 
 function extractErrorMessage(data) {

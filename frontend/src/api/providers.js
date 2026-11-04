@@ -1,5 +1,5 @@
 /**
- * providers.js — Stockerr | MS-10 API Layer
+ * providers.js — Tiendata | MS-10 API Layer
  *
  * Endpoints consumidos (API Gateway → localhost:3000):
  *   GET    /api/providers?estado=activo|inactivo|todos&page=&size=
@@ -12,7 +12,7 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 function getToken() {
-  return localStorage.getItem('stockerr_token') ?? ''
+  return localStorage.getItem('tiendata_token') ?? ''
 }
 
 function extractErrorMessage(data) {

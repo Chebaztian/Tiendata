@@ -9,7 +9,7 @@ function pickFirstArray(candidates) {
 }
 
 function getToken() {
-  return localStorage.getItem('stockerr_token') ?? ''
+  return localStorage.getItem('tiendata_token') ?? ''
 }
 
 function extractErrorMessage(data) {

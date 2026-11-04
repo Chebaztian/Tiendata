@@ -1,7 +1,7 @@
 'use strict';
  
 /**
- * @fileoverview Constantes de roles del sistema INVENTARIO STOCKERR.
+ * @fileoverview Constantes de roles del sistema INVENTARIO TIENDATA.
  *
  * El sistema define exactamente dos roles (Requisito R02):
  *   - Administrador: acceso total a todas las funcionalidades.

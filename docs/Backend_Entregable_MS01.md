@@ -1,6 +1,6 @@
 # Entregable Backend MS-01 — Servicio de Autenticación y Sesión
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Módulo principal:** MS-01 (Auth Service)  
 **Integraciones incluidas:** API Gateway + Shared Utils  
 **Fecha:** 2026-04-04
@@ -68,7 +68,7 @@ Estas utilidades quedan disponibles para unificar manejo de roles, errores y res
 ## 3. Estructura de carpetas relevante
 
 ```text
-stockerr1/
+tiendata/
 ├─ api-gateway/
 │  ├─ src/
 │  │  ├─ app.js

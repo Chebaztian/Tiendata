@@ -9,13 +9,13 @@
  * Solo Administrador (permiso EXPORTAR_DATOS) puede generar la descarga.
  *
  * Mantiene la misma convención que reports.js: VITE_API_URL ya incluye /api,
- * y el JWT vive en localStorage como 'stockerr_token'.
+ * y el JWT vive en localStorage como 'tiendata_token'.
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 function getToken() {
-  return localStorage.getItem('stockerr_token') ?? ''
+  return localStorage.getItem('tiendata_token') ?? ''
 }
 
 class ExportApiError extends Error {

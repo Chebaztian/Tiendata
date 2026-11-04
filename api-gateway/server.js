@@ -11,5 +11,5 @@ const port = Number(process.env.PORT || 3000);
 const app = createApp();
 
 app.listen(port, () => {
-  console.log(`🌐 API Gateway STOCKERR escuchando en el puerto ${port}`);
+  console.log(`🌐 API Gateway TIENDATA escuchando en el puerto ${port}`);
 });

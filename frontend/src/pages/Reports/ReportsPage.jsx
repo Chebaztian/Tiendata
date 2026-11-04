@@ -1,5 +1,5 @@
 /**
- * ReportsPage.jsx — Stockerr  |  MS-07 + MS-12 Frontend
+ * ReportsPage.jsx — Tiendata  |  MS-07 + MS-12 Frontend
  * Vista: Reportes de Inventario + Exportación
  *
  * Ruta:    /reportes

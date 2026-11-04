@@ -4,7 +4,7 @@ const { sendError } = require('../utils/response');
  
 /**
  * @fileoverview Middleware de manejo centralizado de errores para todos los microservicios
- * de INVENTARIO STOCKERR.
+ * de INVENTARIO TIENDATA.
  *
  * Debe registrarse como el ÚLTIMO middleware en cada app de Express:
  *

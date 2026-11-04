@@ -477,7 +477,7 @@ function addSummaryWorksheet(workbook, dataByDataset, meta) {
   });
 
   worksheet.mergeCells('A1:D1');
-  worksheet.getCell('A1').value = 'STOCKERR - Exportacion de datos';
+  worksheet.getCell('A1').value = 'TIENDATA - Exportacion de datos';
   worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: EXPORT_THEME.white } };
   worksheet.getCell('A1').fill = {
     type: 'pattern',
@@ -519,8 +519,8 @@ function addSummaryWorksheet(workbook, dataByDataset, meta) {
 
 async function writeExcel(filePath, dataByDataset, meta) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'STOCKERR MS-12';
-  workbook.lastModifiedBy = 'STOCKERR MS-12';
+  workbook.creator = 'TIENDATA MS-12';
+  workbook.lastModifiedBy = 'TIENDATA MS-12';
   workbook.created = new Date(meta.generatedAt);
   workbook.modified = new Date(meta.generatedAt);
   workbook.subject = 'Exportacion masiva de datos';
@@ -598,7 +598,7 @@ function drawPdfHeader(doc, meta) {
   doc
     .fillColor(pdfColor(EXPORT_THEME.white))
     .fontSize(18)
-    .text('STOCKERR', left, top - 10, { continued: true })
+    .text('TIENDATA', left, top - 10, { continued: true })
     .fontSize(12)
     .text('  Exportacion de datos', { width: contentWidth });
 
@@ -753,7 +753,7 @@ async function writePdf(filePath, dataByDataset, meta) {
       bufferPages: true,
       info: {
         Title: `Exportacion ${datasetLabel(meta.conjunto_datos)}`,
-        Author: 'STOCKERR MS-12',
+        Author: 'TIENDATA MS-12',
         Subject: 'Exportacion masiva de datos',
       },
     });
@@ -784,8 +784,8 @@ function buildDefaultDbPool() {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 5432),
     user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'stockerr',
-    database: process.env.DB_NAME || 'stockerr',
+    password: process.env.DB_PASSWORD || 'tiendata',
+    database: process.env.DB_NAME || 'tiendata',
   });
 }
 
@@ -796,7 +796,7 @@ class ExportService {
     fetchImpl = fetch,
     dataSources = {},
     dbPool,
-    tempDir = path.join(os.tmpdir(), 'stockerr-exports'),
+    tempDir = path.join(os.tmpdir(), 'tiendata-exports'),
     nowProvider = () => new Date().toISOString(),
   } = {}) {
     this.inventoryServiceUrl = inventoryServiceUrl;

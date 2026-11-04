@@ -1,6 +1,6 @@
 # Guía de integración Frontend — MS-01 y API Gateway
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Ámbito:** Consumo desde cliente web de autenticación y rutas protegidas  
 **Última actualización:** 2026-04-04
 

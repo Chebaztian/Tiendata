@@ -6,8 +6,8 @@ import { logoutRequest } from '../api/auth.js'
 
 export const AuthContext = createContext(null)
 
-const TOKEN_KEY = 'stockerr_token'
-const USER_KEY = 'stockerr_user'
+const TOKEN_KEY = 'tiendata_token'
+const USER_KEY = 'tiendata_user'
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)       // { id_usuario, rol, nombre }

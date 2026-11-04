@@ -1,5 +1,5 @@
 /**
- * categories.js — Stockerr  |  MS-03 API Layer
+ * categories.js — Tiendata  |  MS-03 API Layer
  *
  * Endpoints consumidos (API Gateway → localhost:3000):
  *   GET    /api/categories?estado=activo|inactivo|todos
@@ -11,7 +11,7 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 function getToken() {
-  return localStorage.getItem('stockerr_token') ?? ''
+  return localStorage.getItem('tiendata_token') ?? ''
 }
 
 /**

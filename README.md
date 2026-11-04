@@ -1,4 +1,4 @@
-# STOCKERR — Backend MS-01
+# TIENDATA — Backend MS-01
 
 Implementación backend para **MS-01 Servicio de Autenticación y Sesión** con integración por API Gateway y utilidades compartidas.
 
@@ -24,7 +24,7 @@ docker compose up --build
 
 La base de datos se inicializa automáticamente con el backup SQL ubicado en:
 
-`docker/postgres/init/01_backup_stockerrbd.sql`
+`docker/postgres/init/01_backup_tiendatabd.sql`
 
 ## Verificar funcionamiento
 

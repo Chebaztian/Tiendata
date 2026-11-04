@@ -2,7 +2,7 @@
  
 /**
  * @fileoverview Helpers para respuestas HTTP estandarizadas en todos los microservicios
- * de INVENTARIO STOCKERR.
+ * de INVENTARIO TIENDATA.
  *
  * Garantiza que TODA respuesta JSON del sistema siga el mismo contrato (Requisito R05):
  *   - Éxito:  { success: true,  data: <payload>,  message?: <string> }

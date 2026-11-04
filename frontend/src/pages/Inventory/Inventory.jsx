@@ -1,5 +1,5 @@
 /**
- * Inventory.jsx — Stockerr  |  MS-05 Frontend
+ * Inventory.jsx — Tiendata  |  MS-05 Frontend
  * Vista: Movimientos de Inventario
  *
  * Ruta:       /inventario

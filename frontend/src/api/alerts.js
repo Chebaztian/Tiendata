@@ -1,5 +1,5 @@
 /**
- * alerts.js — Stockerr  |  MS-06 API Layer
+ * alerts.js — Tiendata  |  MS-06 API Layer
  *
  * Endpoints consumidos (API Gateway → localhost:3000):
  *   GET /api/inventory/alerts?type=low-stock,high-stock,expiring-soon&categoryId=<id>
@@ -13,7 +13,7 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 function getToken() {
-  return localStorage.getItem('stockerr_token') ?? ''
+  return localStorage.getItem('tiendata_token') ?? ''
 }
 
 function extractErrorMessage(data) {

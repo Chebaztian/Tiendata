@@ -1,5 +1,5 @@
 /**
- * AlertsPage.jsx — Stockerr  |  MS-06 Frontend
+ * AlertsPage.jsx — Tiendata  |  MS-06 Frontend
  * Vista: Alertas de Stock
  *
  * Ruta:       /alertas

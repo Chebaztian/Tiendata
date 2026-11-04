@@ -51,10 +51,10 @@ export default function Login() {
     <>
       <header className="login-topbar">
         <div className="login-topbar-logo">
-          <img src={logo} alt="Stockerr" />
+          <img src={logo} alt="Tiendata" />
         </div>
         <div className="login-topbar-text">
-          <span className="login-topbar-name">Stockerr</span>
+          <span className="login-topbar-name">Tiendata</span>
           <span className="login-topbar-desc">Sistema de Gestión y Control de Inventarios</span>
         </div>
       </header>

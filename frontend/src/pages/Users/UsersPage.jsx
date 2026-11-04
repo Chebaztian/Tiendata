@@ -457,7 +457,7 @@ export default function UsersPage() {
                       Correo
                       {isEditing && <span className="u-field-hint" style={{ marginLeft: 4 }}>(no editable)</span>}
                     </label>
-                    <input id="f-correo" name="correo" type="text" placeholder="Ej: jperez@stockerr.com"
+                    <input id="f-correo" name="correo" type="text" placeholder="Ej: jperez@tiendata.com"
                       value={form.correo} onChange={handleChange}
                       className={fieldErrors.correo ? 'is-error' : ''}
                       disabled={formLoading || isEditing} />

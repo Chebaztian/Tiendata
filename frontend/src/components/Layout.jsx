@@ -149,10 +149,10 @@ export default function Layout({ children }) {
 
         <div className="brand">
           <div className="logo">
-            <img src={logo} alt="Stockerr" />
+            <img src={logo} alt="Tiendata" />
           </div>
           <div className="brand-text">
-            <h1>STOCKERR</h1>
+            <h1>TIENDATA</h1>
             <p>Gestión de inventario</p>
           </div>
         </div>

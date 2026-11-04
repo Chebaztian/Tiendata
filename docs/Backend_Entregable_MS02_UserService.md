@@ -1,6 +1,6 @@
 # Entregable Backend MS-02 — User Service
 
-**Proyecto:** INVENTARIO STOCKERR  
+**Proyecto:** INVENTARIO TIENDATA  
 **Módulo principal:** MS-02 (Gestión de usuarios)  
 **Responsable:** Juan Nicolás Urrutia  
 **Rama objetivo:** `feature/MS-02-user-service`

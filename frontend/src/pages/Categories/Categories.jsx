@@ -1,5 +1,5 @@
 /**
- * Categories.jsx — Stockerr  |  MS-03 Frontend
+ * Categories.jsx — Tiendata  |  MS-03 Frontend
  * Vista: Gestión de Categorías
  *
  * Ruta:        /categorias
