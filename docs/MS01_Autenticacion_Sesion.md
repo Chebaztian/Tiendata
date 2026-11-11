@@ -16,8 +16,8 @@ Login (React) ──► API Gateway :3000 ──► auth-service :3002 ──►
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
 | POST | `/login` | — | `{ identificador, contrasena }` → `{ token, id_usuario, nombre, rol, expires_in }` |
-| GET | `/verify` | Bearer | Valida firma, expiración y revocación |
-| POST | `/refresh` | Bearer | Emite un token nuevo y revoca el anterior |
+| GET | `/verify` | Bearer | Valida firma, expiración, revocación y que el usuario siga activo; devuelve el rol vigente |
+| POST | `/refresh` | Bearer | Emite un token nuevo con el rol vigente y revoca el anterior |
 | POST | `/logout` | Bearer | Revoca el token (exige firma válida; acepta tokens expirados) |
 
 `identificador` puede ser el correo o el nombre de usuario, sin distinguir
@@ -31,6 +31,7 @@ mayúsculas. Por compatibilidad también se aceptan `correo` y `nombre_usuario`.
 | 401 | `AUTH_INVALID_CREDENTIALS` | Usuario o contraseña incorrectos | `intentos_restantes` |
 | 423 | `AUTH_ACCOUNT_BLOCKED` | Bloqueo por intentos fallidos | `bloqueo_hasta`, `reintentar_en_segundos` |
 | 403 | `AUTH_ACCOUNT_DISABLED` | Cuenta inactiva (solo con contraseña correcta) | — |
+| 401 | `AUTH_ACCOUNT_DISABLED` | En verify/refresh: el usuario fue desactivado o eliminado con la sesión abierta | — |
 | 401 | `AUTH_TOKEN_MISSING` / `AUTH_TOKEN_INVALID` / `AUTH_TOKEN_EXPIRED` / `AUTH_TOKEN_REVOKED` | Token ausente, inválido, vencido o revocado | — |
 
 ## Reglas de seguridad
@@ -44,6 +45,11 @@ mayúsculas. Por compatibilidad también se aceptan `correo` y `nombre_usuario`.
 - **Revocación:** logout y refresh guardan el `jti` del token en
   `tokens_revocados` hasta su expiración (persistente entre reinicios y
   compartido entre instancias). Los registros vencidos se limpian solos.
+- **Usuarios desactivados o con rol cambiado:** `verify` (que el gateway llama
+  en cada petición protegida) y `refresh` consultan el estado y el rol actuales
+  en la BD. Desactivar o eliminar a un usuario corta su sesión en la siguiente
+  petición, y un cambio de rol se aplica sin volver a iniciar sesión. Un bloqueo
+  por intentos fallidos no corta una sesión ya iniciada.
 - **JWT:** HS256, 30 min (`JWT_EXPIRES_IN`). `JWT_SECRET` es obligatorio con
   `NODE_ENV=production`.
 - **Auditoría (MS-09):** `login_exitoso`, `login_fallido` (con motivo) y `logout`.
@@ -59,6 +65,8 @@ mayúsculas. Por compatibilidad también se aceptan `correo` y `nombre_usuario`.
 - Cualquier 401 de una llamada autenticada (todas las `src/api/*.js`) cierra la
   sesión y lleva al login con "Tu sesión expiró".
 - Cerrar sesión o renovar en una pestaña se refleja en las demás.
+- Al renovar, el frontend actualiza el rol y el nombre con los vigentes. Si la
+  cuenta fue deshabilitada, el login lo indica.
 
 ## Base de datos
 

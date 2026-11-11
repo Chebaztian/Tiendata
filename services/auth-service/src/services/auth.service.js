@@ -203,16 +203,32 @@ class AuthService {
     }
   }
 
+  /**
+   * Valida firma, expiración y revocación del token y, además, el estado
+   * ACTUAL del usuario en la BD: si fue desactivado o eliminado, la sesión
+   * deja de ser válida de inmediato, y el rol devuelto es siempre el vigente
+   * (un cambio de rol se aplica en la siguiente petición).
+   */
   async verify(token) {
     const payload = this.verifySignature(token);
     if (!payload.jti || (await this.repository.isTokenRevoked(payload.jti))) {
       throw createHttpError(401, 'AUTH_TOKEN_REVOKED', 'Token revocado');
     }
+
+    const user = await this.repository.getUserById(payload.id_usuario);
+    if (!user || user.estado !== 'activo') {
+      throw createHttpError(
+        401,
+        'AUTH_ACCOUNT_DISABLED',
+        'Tu cuenta fue deshabilitada. Contacta al Administrador'
+      );
+    }
+
     return {
       valid: true,
-      id_usuario: payload.id_usuario,
-      nombre: payload.nombre,
-      rol: payload.rol,
+      id_usuario: user.id_usuario,
+      nombre: user.nombre,
+      rol: user.rol,
       expira_en: payload.exp,
     };
   }
@@ -240,17 +256,21 @@ class AuthService {
   }
 
   async refresh(token) {
-    await this.verify(token);
+    // verify() ya comprueba que el usuario siga activo y trae su rol actual
+    const current = await this.verify(token);
     const payload = jwt.decode(token);
     await this.repository.revokeToken({
       jti: payload.jti,
       expiresAtMs: payload.exp * 1000,
       idUsuario: payload.id_usuario,
     });
-    const newToken = this.signToken(payload);
+    const newToken = this.signToken(current);
     return {
       token: newToken,
       expires_in: parseExpiresToSeconds(this.jwtExpiresIn),
+      id_usuario: current.id_usuario,
+      nombre: current.nombre,
+      rol: current.rol,
     };
   }
 }

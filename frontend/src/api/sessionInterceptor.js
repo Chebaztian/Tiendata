@@ -29,7 +29,8 @@ export function isUnauthorizedApiResponse(input, init, response) {
 
 /**
  * Envuelve window.fetch. Devuelve una función que restaura el fetch original.
- * @param {() => void} onUnauthorized
+ * @param {(errorCode: string | undefined) => void} onUnauthorized recibe el
+ *   error.code del backend (p. ej. AUTH_TOKEN_EXPIRED, AUTH_ACCOUNT_DISABLED)
  */
 export function installUnauthorizedInterceptor(onUnauthorized) {
   const originalFetch = window.fetch
@@ -37,7 +38,13 @@ export function installUnauthorizedInterceptor(onUnauthorized) {
   const wrappedFetch = async (input, init) => {
     const response = await originalFetch(input, init)
     if (isUnauthorizedApiResponse(input, init, response)) {
-      onUnauthorized()
+      // Se lee una copia para no consumir el cuerpo que usará quien llamó
+      response
+        .clone()
+        .json()
+        .then((body) => body?.error?.code)
+        .catch(() => undefined)
+        .then((code) => onUnauthorized(code))
     }
     return response
   }

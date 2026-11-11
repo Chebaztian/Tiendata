@@ -24,6 +24,10 @@ class InMemoryAuthRepository {
     );
   }
 
+  async getUserById(idUsuario) {
+    return this.users.find((user) => user.id_usuario === idUsuario) || null;
+  }
+
   async getUserByCorreo(correo) {
     return this.getUserByIdentifier(correo);
   }
