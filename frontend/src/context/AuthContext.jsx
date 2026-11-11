@@ -12,7 +12,12 @@ import {
 } from '../api/auth.js'
 import { installUnauthorizedInterceptor } from '../api/sessionInterceptor.js'
 import { getTokenExpiryMs, isTokenExpired } from '../utils/jwt.js'
-import { AuthContext, REFRESH_MARGIN_MS, SESSION_MESSAGES } from './auth-context.js'
+import {
+  AuthContext,
+  REFRESH_MARGIN_MS,
+  SESSION_MESSAGES,
+  messageForAuthError,
+} from './auth-context.js'
 
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove']
 
@@ -92,7 +97,7 @@ export function AuthProvider({ children }) {
       .catch((error) => {
         if (cancelled) return
         if (error.status === 401) {
-          expireSession(SESSION_MESSAGES.expired)
+          expireSession(messageForAuthError(error.code))
         } else {
           // Servidor no disponible: se conserva la sesión local; si el token
           // ya no es válido, la primera llamada a la API devolverá 401.
@@ -113,8 +118,8 @@ export function AuthProvider({ children }) {
   // ── 401 en cualquier llamada autenticada → sesión expirada ──────────────
   useEffect(
     () =>
-      installUnauthorizedInterceptor(() => {
-        if (tokenRef.current) expireSession(SESSION_MESSAGES.expired)
+      installUnauthorizedInterceptor((code) => {
+        if (tokenRef.current) expireSession(messageForAuthError(code))
       }),
     [expireSession],
   )
@@ -157,10 +162,17 @@ export function AuthProvider({ children }) {
       }
       try {
         const data = await refreshRequest(token)
-        if (!cancelled) applyToken(data.token)
+        if (cancelled) return
+        applyToken(data.token)
+        if (data.rol) {
+          // El servidor devuelve el rol y nombre vigentes (pudieron cambiar)
+          const userData = { id_usuario: data.id_usuario, rol: data.rol, nombre: data.nombre }
+          localStorage.setItem(USER_KEY, JSON.stringify(userData))
+          setUser(userData)
+        }
       } catch (error) {
         if (cancelled) return
-        if (error.status === 401) expireSession(SESSION_MESSAGES.expired)
+        if (error.status === 401) expireSession(messageForAuthError(error.code))
         else scheduleExpiry(SESSION_MESSAGES.expired) // sin conexión: esperar a la expiración
       }
     }, Math.max(0, expiresAt - REFRESH_MARGIN_MS - Date.now()))

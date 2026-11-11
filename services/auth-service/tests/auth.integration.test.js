@@ -290,3 +290,76 @@ test('logout notifica a auditoría', async () => {
   );
   assert.equal(events[1][1].user.id_usuario, 20);
 });
+
+// ── Sesiones de usuarios desactivados o con rol cambiado ────────────────────
+
+const { InMemoryAuthRepository } = require('../src/repositories/auth.repository');
+
+function createAppWithRepository(users) {
+  const repository = new InMemoryAuthRepository({ users });
+  const app = createApp({ repository, serviceOptions: { jwtSecret: 'test-secret' } });
+  return { app, repository };
+}
+
+async function loginAs(app, identificador, contrasena = 'Clave1234') {
+  const response = await request(app).post('/api/auth/login').send({ identificador, contrasena });
+  assert.equal(response.status, 200);
+  return response.body.data.token;
+}
+
+test('un usuario desactivado pierde la sesión de inmediato (verify y refresh)', async () => {
+  const { app, repository } = createAppWithRepository([seedUser()]);
+  const token = await loginAs(app, 'operador1');
+
+  repository.users[0].estado = 'inactivo';
+
+  const verify = await request(app).get('/api/auth/verify').set('Authorization', `Bearer ${token}`);
+  assert.equal(verify.status, 401);
+  assert.equal(verify.body.error.code, 'AUTH_ACCOUNT_DISABLED');
+
+  const refresh = await request(app).post('/api/auth/refresh').set('Authorization', `Bearer ${token}`);
+  assert.equal(refresh.status, 401);
+  assert.equal(refresh.body.error.code, 'AUTH_ACCOUNT_DISABLED');
+});
+
+test('un usuario eliminado pierde la sesión', async () => {
+  const { app, repository } = createAppWithRepository([seedUser()]);
+  const token = await loginAs(app, 'operador1');
+
+  repository.users.length = 0;
+
+  const verify = await request(app).get('/api/auth/verify').set('Authorization', `Bearer ${token}`);
+  assert.equal(verify.status, 401);
+});
+
+test('un cambio de rol se aplica sin volver a iniciar sesión', async () => {
+  const { app, repository } = createAppWithRepository([seedUser({ rol: 'Administrador' })]);
+  const token = await loginAs(app, 'operador1');
+
+  repository.users[0].rol = 'Operador';
+  repository.users[0].nombre = 'Nombre Nuevo';
+
+  const verify = await request(app).get('/api/auth/verify').set('Authorization', `Bearer ${token}`);
+  assert.equal(verify.status, 200);
+  assert.equal(verify.body.data.rol, 'Operador');
+
+  const refresh = await request(app).post('/api/auth/refresh').set('Authorization', `Bearer ${token}`);
+  assert.equal(refresh.status, 200);
+  assert.equal(refresh.body.data.rol, 'Operador');
+  assert.equal(refresh.body.data.nombre, 'Nombre Nuevo');
+
+  const renewed = await request(app)
+    .get('/api/auth/verify')
+    .set('Authorization', `Bearer ${refresh.body.data.token}`);
+  assert.equal(renewed.body.data.rol, 'Operador');
+});
+
+test('un bloqueo por intentos fallidos no corta la sesión ya iniciada', async () => {
+  const { app, repository } = createAppWithRepository([seedUser()]);
+  const token = await loginAs(app, 'operador1');
+
+  repository.users[0].bloqueo_hasta = Date.now() + 10 * 60 * 1000;
+
+  const verify = await request(app).get('/api/auth/verify').set('Authorization', `Bearer ${token}`);
+  assert.equal(verify.status, 200);
+});

@@ -124,8 +124,29 @@ describe('AuthProvider', () => {
       })
     })
 
-    expect(screen.getByTestId('state')).toHaveTextContent('out')
+    await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('out'))
     expect(screen.getByTestId('message')).toHaveTextContent(SESSION_MESSAGES.expired)
+  })
+
+  it('si la cuenta fue deshabilitada lo indica al cerrar la sesión', async () => {
+    const token = makeToken(1800)
+    localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(USER_KEY, JSON.stringify(storedUser))
+    fetchMock.mockImplementation((url) =>
+      /\/auth\/verify/.test(url)
+        ? jsonResponse(200, { success: true, data: { id_usuario: 1, rol: 'Administrador', nombre: 'Ana' } })
+        : jsonResponse(401, { success: false, error: { code: 'AUTH_ACCOUNT_DISABLED' } }),
+    )
+
+    render(<AuthProvider><Probe /></AuthProvider>)
+    await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('in'))
+
+    await act(async () => {
+      await window.fetch('/api/products', { headers: { Authorization: `Bearer ${token}` } })
+    })
+
+    await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('out'))
+    expect(screen.getByTestId('message')).toHaveTextContent(SESSION_MESSAGES.disabled)
   })
 
   it('renueva el token antes de expirar si hubo actividad', async () => {
@@ -136,7 +157,10 @@ describe('AuthProvider', () => {
     localStorage.setItem(USER_KEY, JSON.stringify(storedUser))
     fetchMock.mockImplementation((url) =>
       /\/auth\/refresh/.test(url)
-        ? jsonResponse(200, { success: true, data: { token: newToken, expires_in: 1800 } })
+        ? jsonResponse(200, {
+            success: true,
+            data: { token: newToken, expires_in: 1800, id_usuario: 1, rol: 'Operador', nombre: 'Ana' },
+          })
         : jsonResponse(200, { success: true, data: { id_usuario: 1, rol: 'Administrador', nombre: 'Ana' } }),
     )
 
@@ -151,6 +175,8 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('token')).toHaveTextContent(newToken))
     expect(localStorage.getItem(TOKEN_KEY)).toBe(newToken)
+    // el rol vigente que devuelve el servidor reemplaza al guardado
+    expect(JSON.parse(localStorage.getItem(USER_KEY)).rol).toBe('Operador')
   })
 
   it('sin actividad deja expirar la sesión y muestra el aviso de inactividad', async () => {

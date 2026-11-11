@@ -68,6 +68,28 @@ class PgAuthRepository {
     return rows[0] ? this.mapUser(rows[0]) : null;
   }
 
+  async getUserById(idUsuario) {
+    const { rows } = await this.pool.query(
+      `SELECT
+         u.id_usuario,
+         u.correo,
+         u.nombre_usuario,
+         u.nombre,
+         r.nombre_rol AS rol,
+         u.contrasena AS contrasena_hash,
+         u.estado,
+         u.intentos_fallidos,
+         u.bloqueado,
+         u.bloqueo_hasta
+       FROM usuarios u
+       JOIN roles r ON r.id_rol = u.id_rol
+       WHERE u.id_usuario = $1
+       LIMIT 1`,
+      [idUsuario]
+    );
+    return rows[0] ? this.mapUser(rows[0]) : null;
+  }
+
   async getUserByCorreo(correo) {
     return this.getUserByIdentifier(correo);
   }
