@@ -2,7 +2,8 @@
 // Capa de comunicación con MS-02 — Gestión de Usuarios
 //
 // Notas del contrato:
-//   - El backend identifica al usuario por "correo" (usado como nombre_usuario en UI)
+//   - El correo es único y no se puede cambiar; nombre_usuario es opcional,
+//     único (sin distinguir mayúsculas) y editable — sirve para iniciar sesión
 //   - estado llega como boolean en respuestas (true=activo, false=inactivo)
 //   - estado se envía como string en requests ("activo"/"inactivo")
 //   - La contraseña NUNCA se devuelve en ninguna respuesta
@@ -71,9 +72,9 @@ export async function getUserById(id) {
 // ── POST /api/users ──────────────────────────────────────────────
 /**
  * Crea un nuevo usuario.
- * El campo "correo" es el identificador único (nombre_usuario en la UI).
+ * El correo es el identificador único; nombre_usuario es opcional.
  *
- * @param {{ nombre: string, correo: string, contrasena: string, id_rol: number, estado?: string }} payload
+ * @param {{ nombre: string, correo: string, nombre_usuario?: string, contrasena: string, id_rol: number, estado?: string }} payload
  * @returns {Promise<Object>} usuario creado (sin contraseña)
  */
 export async function createUser(payload) {
@@ -89,10 +90,10 @@ export async function createUser(payload) {
 // ── PUT /api/users/:id ───────────────────────────────────────────
 /**
  * Actualización parcial — solo envía los campos que cambiaron.
- * El campo "correo" (nombre_usuario) NO es modificable tras la creación.
+ * El correo NO es modificable tras la creación. nombre_usuario '' lo quita.
  *
  * @param {number} id
- * @param {{ nombre?: string, contrasena?: string, estado?: string, id_rol?: number }} changes
+ * @param {{ nombre?: string, nombre_usuario?: string, contrasena?: string, estado?: string, id_rol?: number }} changes
  * @returns {Promise<Object>} usuario actualizado (sin contraseña)
  */
 export async function updateUser(id, changes) {

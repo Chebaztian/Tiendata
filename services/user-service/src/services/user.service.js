@@ -29,6 +29,29 @@ function sanitizeUser(user) {
   return { ...safeUser, bloqueo_vigente: isBlockedNow(user) };
 }
 
+/**
+ * Si dos peticiones simultáneas pasan la validación de unicidad, el índice
+ * único de la BD rechaza la segunda (código 23505): se responde 409.
+ */
+async function withUniqueViolationAsConflict(operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error?.code === '23505') {
+      const detail = `${error.constraint || ''} ${error.detail || ''}`;
+      if (/nombre_usuario/.test(detail)) {
+        throw createHttpError(
+          409,
+          'USER_USERNAME_ALREADY_EXISTS',
+          'El nombre de usuario ya esta registrado'
+        );
+      }
+      throw createHttpError(409, 'USER_EMAIL_ALREADY_EXISTS', 'El correo ya esta registrado');
+    }
+    throw error;
+  }
+}
+
 class UserService {
   constructor({
     repository,
@@ -45,21 +68,40 @@ class UserService {
     this.bcryptSaltRounds = bcryptSaltRounds;
   }
 
+  async ensureNombreUsuarioAvailable(nombreUsuario, idUsuario = 0) {
+    if (!nombreUsuario) return;
+    const duplicated = await this.repository.getUserByNombreUsuarioExcludingId(
+      nombreUsuario,
+      idUsuario
+    );
+    if (duplicated) {
+      throw createHttpError(
+        409,
+        'USER_USERNAME_ALREADY_EXISTS',
+        'El nombre de usuario ya esta registrado'
+      );
+    }
+  }
+
   async createUser(payload, actorContext = {}) {
     const existing = await this.repository.getUserByCorreo(payload.correo);
     if (existing) {
       throw createHttpError(409, 'USER_EMAIL_ALREADY_EXISTS', 'El correo ya esta registrado');
     }
+    await this.ensureNombreUsuarioAvailable(payload.nombre_usuario);
 
     const contrasena = await bcrypt.hash(payload.contrasena, this.bcryptSaltRounds);
 
-    const created = await this.repository.createUser({
-      id_rol: payload.id_rol,
-      nombre: payload.nombre,
-      correo: payload.correo,
-      contrasena,
-      estado: payload.estado,
-    });
+    const created = await withUniqueViolationAsConflict(() =>
+      this.repository.createUser({
+        id_rol: payload.id_rol,
+        nombre: payload.nombre,
+        correo: payload.correo,
+        nombre_usuario: payload.nombre_usuario,
+        contrasena,
+        estado: payload.estado,
+      })
+    );
 
     const safeUser = sanitizeUser(created);
     void this.auditNotifier
@@ -121,6 +163,10 @@ class UserService {
       }
     }
 
+    if (patch.nombre_usuario) {
+      await this.ensureNombreUsuarioAvailable(patch.nombre_usuario, idUsuario);
+    }
+
     this.validateAdminSelfDisable(actorContext, idUsuario, patch.estado);
 
     const patchToPersist = { ...patch };
@@ -128,7 +174,9 @@ class UserService {
       patchToPersist.contrasena = await bcrypt.hash(patch.contrasena, this.bcryptSaltRounds);
     }
 
-    const updated = await this.repository.updateUserPartial(idUsuario, patchToPersist);
+    const updated = await withUniqueViolationAsConflict(() =>
+      this.repository.updateUserPartial(idUsuario, patchToPersist)
+    );
     const safeCurrent = sanitizeUser(current);
     const safeUpdated = sanitizeUser(updated);
 

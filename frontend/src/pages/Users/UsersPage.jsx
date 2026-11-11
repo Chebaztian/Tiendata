@@ -2,10 +2,10 @@
 // Gestión de Usuarios — MS-02
 //
 //   - Tabla paginada con filtro por estado y búsqueda local
-//   - Modal crear usuario: nombre, nombre_usuario (correo), contraseña,
-//     confirmar contraseña, rol, estado
-//   - Modal editar: nombre, contraseña (opcional), estado
-//     (nombre_usuario NO es editable tras creación)
+//   - Modal crear usuario: nombre, correo, nombre de usuario (opcional),
+//     contraseña, confirmar contraseña, rol, estado
+//   - Modal editar: nombre, nombre de usuario, contraseña (opcional), rol, estado
+//     (el correo NO es editable tras la creación)
 //   - Modal confirmación para deshabilitar
 //   - Validaciones completas según requerimientos
 //   - Mensajes de error específicos por código del backend
@@ -38,11 +38,12 @@ function getRolLabel(idRol) {
 }
 function mapApiError(err) {
   const map = {
-    USER_EMAIL_ALREADY_EXISTS:    'Este correo usuario ya está en uso.',
+    USER_EMAIL_ALREADY_EXISTS:    'Este correo ya está en uso.',
+    USER_USERNAME_ALREADY_EXISTS: 'Este nombre de usuario ya está en uso.',
     ADMIN_SELF_DISABLE_FORBIDDEN: 'Un administrador no puede deshabilitarse a sí mismo.',
     USER_NOT_FOUND:               'Usuario no encontrado.',
-    VALIDATION_ERROR:             'Verifica los datos ingresados.',
   }
+  if (err.code === 'VALIDATION_ERROR') return err.message || 'Verifica los datos ingresados.'
   return map[err.code] || err.message || 'Error inesperado. Intenta de nuevo.'
 }
 
@@ -50,6 +51,7 @@ function mapApiError(err) {
 const EMPTY_FORM = {
   nombre:     '',
   correo:     '',
+  nombre_usuario: '',
   contrasena: '',
   confirmar:  '',
   id_rol:     2,
@@ -57,10 +59,20 @@ const EMPTY_FORM = {
 }
 
 /* ── Validaciones ────────────────────────────────────────────────── */
+// Mismo criterio que el backend: 3-30 caracteres, letras, números, . _ -
+const USERNAME_PATTERN = /^[a-z0-9._-]{3,30}$/
+
+function normalizeUsername(value = '') {
+  return value.trim().toLowerCase()
+}
+
 function validate(form, isEditing) {
   const errors = {}
   if (!form.nombre.trim())
     errors.nombre = 'El nombre completo es obligatorio.'
+  const username = normalizeUsername(form.nombre_usuario)
+  if (username && !USERNAME_PATTERN.test(username))
+    errors.nombre_usuario = 'Entre 3 y 30 caracteres: letras, números, punto, guion o guion bajo (sin @ ni espacios).'
   if (!isEditing) {
     if (!form.correo.trim())
       errors.correo = 'El correo es obligatorio.'
@@ -87,9 +99,6 @@ function validate(form, isEditing) {
   return errors
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   COMPONENTE PRINCIPAL
-══════════════════════════════════════════════════════════════════ */
 /** Texto del tooltip de bloqueo: hasta cuándo o si es indefinido. */
 function blockedUntilLabel(bloqueoHasta) {
   if (!bloqueoHasta) return 'Bloqueo indefinido'
@@ -100,6 +109,9 @@ function blockedUntilLabel(bloqueoHasta) {
   return `Bloqueado hasta las ${hora}`
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   COMPONENTE PRINCIPAL
+══════════════════════════════════════════════════════════════════ */
 export default function UsersPage() {
   const { user: authUser } = useAuth()
 
@@ -163,7 +175,8 @@ export default function UsersPage() {
 
   const visible = users.filter(u =>
     u.nombre?.toLowerCase().includes(search.toLowerCase()) ||
-    u.correo?.toLowerCase().includes(search.toLowerCase())
+    u.correo?.toLowerCase().includes(search.toLowerCase()) ||
+    u.nombre_usuario?.toLowerCase().includes(search.toLowerCase())
   )
 
   /* ── Abrir modal crear ── */
@@ -181,6 +194,7 @@ export default function UsersPage() {
     setForm({
       nombre:     u.nombre ?? '',
       correo:     u.correo ?? '',
+      nombre_usuario: u.nombre_usuario ?? '',
       contrasena: '',
       confirmar:  '',
       id_rol:     u.id_rol ?? 2,
@@ -216,6 +230,8 @@ export default function UsersPage() {
       if (isEditing) {
         const changes = {}
         if (form.nombre.trim() !== editingUser.nombre)      changes.nombre = form.nombre.trim()
+        const username = normalizeUsername(form.nombre_usuario)
+        if (username !== (editingUser.nombre_usuario ?? '')) changes.nombre_usuario = username
         if (Number(form.id_rol) !== Number(editingUser.id_rol)) changes.id_rol = form.id_rol
         if ((form.estado === 'activo') !== editingUser.estado)  changes.estado = form.estado
         if (form.contrasena) changes.contrasena = form.contrasena
@@ -226,6 +242,9 @@ export default function UsersPage() {
         await createUser({
           nombre:     form.nombre.trim(),
           correo:     form.correo.trim(),
+          ...(normalizeUsername(form.nombre_usuario)
+            ? { nombre_usuario: normalizeUsername(form.nombre_usuario) }
+            : {}),
           contrasena: form.contrasena,
           id_rol:     form.id_rol,
           estado:     form.estado,
@@ -370,7 +389,12 @@ export default function UsersPage() {
                     <td>
                       <div className="u-user-cell">
                         <div className="u-avatar">{getInitials(u.nombre)}</div>
-                        <span className="u-user-name">{u.nombre}</span>
+                        <div className="u-user-names">
+                          <span className="u-user-name">{u.nombre}</span>
+                          {u.nombre_usuario && (
+                            <span className="u-user-handle">@{u.nombre_usuario}</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="u-td-muted">{u.correo}</td>
@@ -511,6 +535,22 @@ export default function UsersPage() {
                     {fieldErrors.correo
                       ? <span className="u-field-error">{fieldErrors.correo}</span>
                       : !isEditing && <span className="u-field-hint">Debe ser único. No se puede cambiar después.</span>
+                    }
+                  </div>
+
+                  <div className="u-form-field">
+                    <label htmlFor="f-nombre-usuario">
+                      Nombre de usuario
+                      <span className="u-field-hint" style={{ marginLeft: 4 }}>(opcional)</span>
+                    </label>
+                    <input id="f-nombre-usuario" name="nombre_usuario" type="text" placeholder="Ej: jperez"
+                      value={form.nombre_usuario} onChange={handleChange}
+                      autoCapitalize="none" spellCheck={false}
+                      className={fieldErrors.nombre_usuario ? 'is-error' : ''}
+                      disabled={formLoading} />
+                    {fieldErrors.nombre_usuario
+                      ? <span className="u-field-error">{fieldErrors.nombre_usuario}</span>
+                      : <span className="u-field-hint">Permite iniciar sesión con este nombre en lugar del correo.</span>
                     }
                   </div>
 

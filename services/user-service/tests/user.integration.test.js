@@ -193,3 +193,96 @@ test('POST /api/users/:id/desbloquear devuelve 404 si el usuario no existe', asy
   const response = await request(app).post('/api/users/999/desbloquear');
   assert.equal(response.status, 404);
 });
+
+// ── Nombre de usuario y política de contraseña (MS-01) ──────────────────────
+
+test('POST /api/users guarda nombre_usuario normalizado', async () => {
+  const { app } = buildTestContext();
+  const response = await request(app).post('/api/users').send({
+    nombre: 'Laura Gómez',
+    correo: 'laura@tiendata.com',
+    nombre_usuario: '  Laura.Gomez ',
+    contrasena: 'Laura1234',
+    id_rol: 2,
+  });
+  assert.equal(response.status, 201);
+  assert.equal(response.body.data.nombre_usuario, 'laura.gomez');
+});
+
+test('POST /api/users sin nombre_usuario lo deja vacío', async () => {
+  const { app } = buildTestContext();
+  const response = await request(app).post('/api/users').send({
+    nombre: 'Sin Usuario',
+    correo: 'sinusuario@tiendata.com',
+    contrasena: 'Clave1234',
+  });
+  assert.equal(response.status, 201);
+  assert.equal(response.body.data.nombre_usuario, null);
+});
+
+test('nombre_usuario inválido o con @ responde 400', async () => {
+  const { app } = buildTestContext();
+  for (const nombre_usuario of ['ab', 'con espacio', 'laura@x', 'ñandú', 'a'.repeat(31)]) {
+    const response = await request(app).post('/api/users').send({
+      nombre: 'X',
+      correo: `x${Math.random()}@tiendata.com`,
+      nombre_usuario,
+      contrasena: 'Clave1234',
+    });
+    assert.equal(response.status, 400, nombre_usuario);
+  }
+});
+
+test('nombre_usuario duplicado (sin distinguir mayúsculas) responde 409 al crear y editar', async () => {
+  const { app } = buildTestContext();
+  const first = await request(app).post('/api/users').send({
+    nombre: 'Uno',
+    correo: 'uno@tiendata.com',
+    nombre_usuario: 'operador1',
+    contrasena: 'Clave1234',
+  });
+  assert.equal(first.status, 201);
+
+  const duplicated = await request(app).post('/api/users').send({
+    nombre: 'Dos',
+    correo: 'dos@tiendata.com',
+    nombre_usuario: 'OPERADOR1',
+    contrasena: 'Clave1234',
+  });
+  assert.equal(duplicated.status, 409);
+  assert.equal(duplicated.body.error.code, 'USER_USERNAME_ALREADY_EXISTS');
+
+  const edit = await request(app).put('/api/users/2').send({ nombre_usuario: 'Operador1' });
+  assert.equal(edit.status, 409);
+
+  const sameUser = await request(app)
+    .put(`/api/users/${first.body.data.id_usuario}`)
+    .send({ nombre_usuario: 'operador1' });
+  assert.equal(sameUser.status, 200, 'el propio usuario puede conservar su nombre');
+});
+
+test('PUT /api/users/:id permite asignar y quitar el nombre de usuario', async () => {
+  const { app } = buildTestContext();
+  const assign = await request(app).put('/api/users/2').send({ nombre_usuario: 'operativo' });
+  assert.equal(assign.status, 200);
+  assert.equal(assign.body.data.nombre_usuario, 'operativo');
+
+  const remove = await request(app).put('/api/users/2').send({ nombre_usuario: '' });
+  assert.equal(remove.status, 200);
+  assert.equal(remove.body.data.nombre_usuario, null);
+});
+
+test('la contraseña exige 8+ caracteres con letras y números (crear y editar)', async () => {
+  const { app } = buildTestContext();
+  for (const contrasena of ['corta1', 'solamenteletras', '1234567890']) {
+    const create = await request(app).post('/api/users').send({
+      nombre: 'X',
+      correo: `p${Math.random()}@tiendata.com`,
+      contrasena,
+    });
+    assert.equal(create.status, 400, contrasena);
+
+    const update = await request(app).put('/api/users/2').send({ contrasena });
+    assert.equal(update.status, 400, contrasena);
+  }
+});
