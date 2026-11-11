@@ -618,3 +618,24 @@
 
 @keyframes u-toastIn  { from { opacity: 0; transform: translateX(20px) } to { opacity: 1; transform: translateX(0) } }
 @keyframes u-toastOut { to   { opacity: 0; transform: translateX(20px) } }
+/* ── Bloqueo por intentos fallidos (MS-01) ── */
+.u-status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.u-badge--blocked {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+.u-badge--blocked .u-badge-dot { background: #F59E0B; }
+
+.u-btn--warning {
+  background: #FFFBEB;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+.u-btn--warning:not(:disabled):hover { background: #FEF3C7; }

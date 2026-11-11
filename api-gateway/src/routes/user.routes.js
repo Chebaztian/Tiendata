@@ -134,6 +134,21 @@ function createUserRoutes({ userServiceUrl, authMiddleware, fetchImpl = fetch })
       ).catch(next)
   );
 
+  router.post(
+    '/:id/desbloquear',
+    authMiddleware,
+    requireRoles([ADMINISTRADOR]),
+    (req, res, next) =>
+      proxyToUserService(
+        req,
+        res,
+        userServiceUrl,
+        `/api/users/${encodeURIComponent(req.params.id)}/desbloquear`,
+        'POST',
+        fetchImpl
+      ).catch(next)
+  );
+
   return router;
 }
 

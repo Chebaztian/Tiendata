@@ -24,6 +24,7 @@
  *   GET   /api/users/:id             JWT + Admin       → MS-02 user-service
  *   PUT   /api/users/:id             JWT + Admin       → MS-02 user-service
  *   DELETE /api/users/:id            JWT + Admin       → MS-02 user-service
+ *   POST  /api/users/:id/desbloquear JWT + Admin       → MS-02 user-service
  *
  *   GET   /api/categories            JWT + Admin/Op    → MS-03 category-service
  *   POST  /api/categories            JWT + Admin       → MS-03 category-service

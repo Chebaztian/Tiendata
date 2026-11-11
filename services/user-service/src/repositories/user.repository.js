@@ -1,3 +1,7 @@
+// Columnas devueltas en todas las consultas de usuario
+const USER_COLUMNS =
+  'id_usuario, id_rol, nombre, correo, contrasena, estado, fecha_creacion, ultimo_acceso, intentos_fallidos, bloqueado, bloqueo_hasta';
+
 class PgUserRepository {
   constructor(pool) {
     this.pool = pool;
@@ -7,7 +11,7 @@ class PgUserRepository {
     const query = `
       INSERT INTO usuarios (id_rol, nombre, correo, contrasena, estado)
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING id_usuario, id_rol, nombre, correo, contrasena, estado, fecha_creacion, ultimo_acceso, intentos_fallidos, bloqueado
+      RETURNING ${USER_COLUMNS}
     `;
 
     const { rows } = await this.pool.query(query, [id_rol, nombre, correo, contrasena, estado]);
@@ -16,7 +20,7 @@ class PgUserRepository {
 
   async getUserById(idUsuario) {
     const query = `
-      SELECT id_usuario, id_rol, nombre, correo, contrasena, estado, fecha_creacion, ultimo_acceso, intentos_fallidos, bloqueado
+      SELECT ${USER_COLUMNS}
       FROM usuarios
       WHERE id_usuario = $1
       LIMIT 1
@@ -27,7 +31,7 @@ class PgUserRepository {
 
   async getUserByCorreo(correo) {
     const query = `
-      SELECT id_usuario, id_rol, nombre, correo, contrasena, estado, fecha_creacion, ultimo_acceso, intentos_fallidos, bloqueado
+      SELECT ${USER_COLUMNS}
       FROM usuarios
       WHERE correo = $1
       LIMIT 1
@@ -67,7 +71,7 @@ class PgUserRepository {
     params.push(offset);
 
     const listQuery = `
-      SELECT id_usuario, id_rol, nombre, correo, contrasena, estado, fecha_creacion, ultimo_acceso, intentos_fallidos, bloqueado
+      SELECT ${USER_COLUMNS}
       FROM usuarios
       ${whereClause}
       ORDER BY id_usuario ASC
@@ -110,7 +114,7 @@ class PgUserRepository {
       UPDATE usuarios
       SET ${updates.join(', ')}
       WHERE id_usuario = $${values.length}
-      RETURNING id_usuario, id_rol, nombre, correo, contrasena, estado, fecha_creacion, ultimo_acceso, intentos_fallidos, bloqueado
+      RETURNING ${USER_COLUMNS}
     `;
 
     const { rows } = await this.pool.query(query, values);
@@ -119,6 +123,20 @@ class PgUserRepository {
 
   async softDeleteUser(idUsuario) {
     return this.updateUserPartial(idUsuario, { estado: false });
+  }
+
+  /** Quita el bloqueo por intentos fallidos (temporal o indefinido). */
+  async unlockUser(idUsuario) {
+    const { rows } = await this.pool.query(
+      `UPDATE usuarios
+          SET bloqueado = false,
+              bloqueo_hasta = NULL,
+              intentos_fallidos = 0
+        WHERE id_usuario = $1
+        RETURNING ${USER_COLUMNS}`,
+      [idUsuario]
+    );
+    return rows[0] || null;
   }
 }
 
@@ -137,6 +155,7 @@ class InMemoryUserRepository {
       ultimo_acceso: null,
       intentos_fallidos: 0,
       bloqueado: false,
+      bloqueo_hasta: null,
       ...payload,
     };
 
@@ -189,6 +208,14 @@ class InMemoryUserRepository {
 
   async softDeleteUser(idUsuario) {
     return this.updateUserPartial(idUsuario, { estado: false });
+  }
+
+  async unlockUser(idUsuario) {
+    return this.updateUserPartial(idUsuario, {
+      bloqueado: false,
+      bloqueo_hasta: null,
+      intentos_fallidos: 0,
+    });
   }
 
   async getRawById(idUsuario) {

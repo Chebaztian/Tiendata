@@ -8,6 +8,7 @@ function createUserRoutes(controller) {
   router.get('/:id', controller.getUserById);
   router.put('/:id', controller.updateUser);
   router.delete('/:id', controller.deleteUser);
+  router.post('/:id/desbloquear', controller.unlockUser);
 
   return router;
 }
