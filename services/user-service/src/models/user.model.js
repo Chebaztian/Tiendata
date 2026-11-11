@@ -23,6 +23,44 @@ function toBooleanEstado(value) {
   throw createHttpError(400, 'VALIDATION_ERROR', 'estado debe ser activo/inactivo o booleano');
 }
 
+// Nombre de usuario: 3-30 caracteres, letras, números, punto, guion o guion bajo.
+// No admite "@" para no confundirse con un correo al iniciar sesión.
+const USERNAME_PATTERN = /^[a-z0-9._-]{3,30}$/;
+
+/**
+ * Normaliza el nombre de usuario (minúsculas, sin espacios).
+ * Cadena vacía o null => null (sin nombre de usuario).
+ */
+function normalizeNombreUsuario(value) {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === '') return null;
+  if (!USERNAME_PATTERN.test(normalized)) {
+    throw createHttpError(
+      400,
+      'VALIDATION_ERROR',
+      'nombre_usuario debe tener entre 3 y 30 caracteres: letras, números, punto, guion o guion bajo'
+    );
+  }
+  return normalized;
+}
+
+// Política mínima de contraseña (la misma que valida el frontend)
+function validatePassword(value) {
+  const password = String(value);
+  if (password.length < 8 || password.length > 128) {
+    throw createHttpError(
+      400,
+      'VALIDATION_ERROR',
+      'La contraseña debe tener entre 8 y 128 caracteres'
+    );
+  }
+  if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+    throw createHttpError(400, 'VALIDATION_ERROR', 'La contraseña debe incluir letras y números');
+  }
+  return password;
+}
+
 function validateCreateUserPayload(body) {
   if (!body || typeof body !== 'object') {
     throw createHttpError(400, 'VALIDATION_ERROR', 'El cuerpo de la solicitud es obligatorio');
@@ -41,7 +79,8 @@ function validateCreateUserPayload(body) {
   return {
     nombre: String(nombre).trim(),
     correo: String(correo).trim().toLowerCase(),
-    contrasena: String(contrasena),
+    nombre_usuario: normalizeNombreUsuario(body.nombre_usuario),
+    contrasena: validatePassword(contrasena),
     id_rol: Number(id_rol),
     estado: toBooleanEstado(estado),
   };
@@ -66,8 +105,12 @@ function validateUpdateUserPayload(body) {
     patch.correo = correo;
   }
 
+  if (Object.prototype.hasOwnProperty.call(body, 'nombre_usuario')) {
+    patch.nombre_usuario = normalizeNombreUsuario(body.nombre_usuario);
+  }
+
   if (Object.prototype.hasOwnProperty.call(body, 'contrasena')) {
-    patch.contrasena = String(body.contrasena);
+    patch.contrasena = validatePassword(body.contrasena);
   }
 
   if (Object.prototype.hasOwnProperty.call(body, 'id_rol')) {
@@ -118,6 +161,8 @@ function extractActorContext(headers = {}) {
 
 module.exports = {
   createHttpError,
+  normalizeNombreUsuario,
+  validatePassword,
   validateCreateUserPayload,
   validateUpdateUserPayload,
   parseUserId,

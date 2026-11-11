@@ -639,3 +639,7 @@
   border: 1px solid #FCD34D;
 }
 .u-btn--warning:not(:disabled):hover { background: #FEF3C7; }
+
+/* ── Nombre de usuario bajo el nombre ── */
+.u-user-names { display: flex; flex-direction: column; line-height: 1.25; }
+.u-user-handle { font-size: 12px; color: var(--text-muted); }

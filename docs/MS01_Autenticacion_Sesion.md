@@ -81,7 +81,11 @@ mayúsculas. Por compatibilidad también se aceptan `correo` y `nombre_usuario`.
 - `usuarios.bloqueo_hasta`
 - tabla `tokens_revocados (jti, id_usuario, revocado_en, expira_en)`
 
-## Pendiente
+## Gestión de usuarios (MS-02)
 
-- MS-02 (user-service) todavía no permite asignar `nombre_usuario` al crear o
-  editar usuarios: los usuarios nuevos ingresan con su correo.
+- **Nombre de usuario** opcional al crear o editar un usuario: 3-30 caracteres
+  (letras, números, `.`, `_`, `-`), sin `@` ni espacios. Se guarda en
+  minúsculas y es único sin distinguir mayúsculas (`409
+  USER_USERNAME_ALREADY_EXISTS`). Enviar `""` lo quita.
+- **Contraseña mínima:** 8 a 128 caracteres con letras y números, validada en
+  el frontend y en el user-service (crear y editar).

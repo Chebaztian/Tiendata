@@ -1,20 +1,27 @@
 // Columnas devueltas en todas las consultas de usuario
 const USER_COLUMNS =
-  'id_usuario, id_rol, nombre, correo, contrasena, estado, fecha_creacion, ultimo_acceso, intentos_fallidos, bloqueado, bloqueo_hasta';
+  'id_usuario, id_rol, nombre, correo, nombre_usuario, contrasena, estado, fecha_creacion, ultimo_acceso, intentos_fallidos, bloqueado, bloqueo_hasta';
 
 class PgUserRepository {
   constructor(pool) {
     this.pool = pool;
   }
 
-  async createUser({ id_rol, nombre, correo, contrasena, estado }) {
+  async createUser({ id_rol, nombre, correo, nombre_usuario = null, contrasena, estado }) {
     const query = `
-      INSERT INTO usuarios (id_rol, nombre, correo, contrasena, estado)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO usuarios (id_rol, nombre, correo, nombre_usuario, contrasena, estado)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING ${USER_COLUMNS}
     `;
 
-    const { rows } = await this.pool.query(query, [id_rol, nombre, correo, contrasena, estado]);
+    const { rows } = await this.pool.query(query, [
+      id_rol,
+      nombre,
+      correo,
+      nombre_usuario,
+      contrasena,
+      estado,
+    ]);
     return rows[0];
   }
 
@@ -48,6 +55,17 @@ class PgUserRepository {
       LIMIT 1
     `;
     const { rows } = await this.pool.query(query, [correo, idUsuario]);
+    return rows[0] || null;
+  }
+
+  async getUserByNombreUsuarioExcludingId(nombreUsuario, idUsuario = 0) {
+    const { rows } = await this.pool.query(
+      `SELECT id_usuario
+         FROM usuarios
+        WHERE lower(nombre_usuario) = lower($1) AND id_usuario <> $2
+        LIMIT 1`,
+      [nombreUsuario, idUsuario]
+    );
     return rows[0] || null;
   }
 
@@ -91,6 +109,7 @@ class PgUserRepository {
       id_rol: 'id_rol',
       nombre: 'nombre',
       correo: 'correo',
+      nombre_usuario: 'nombre_usuario',
       contrasena: 'contrasena',
       estado: 'estado',
     };
@@ -156,6 +175,7 @@ class InMemoryUserRepository {
       intentos_fallidos: 0,
       bloqueado: false,
       bloqueo_hasta: null,
+      nombre_usuario: null,
       ...payload,
     };
 
@@ -176,6 +196,17 @@ class InMemoryUserRepository {
 
   async getUserByCorreoExcludingId(correo, idUsuario) {
     const user = this.users.find((item) => item.correo === correo && item.id_usuario !== idUsuario);
+    return user ? { id_usuario: user.id_usuario } : null;
+  }
+
+  async getUserByNombreUsuarioExcludingId(nombreUsuario, idUsuario = 0) {
+    const value = String(nombreUsuario).toLowerCase();
+    const user = this.users.find(
+      (item) =>
+        item.nombre_usuario &&
+        item.nombre_usuario.toLowerCase() === value &&
+        item.id_usuario !== idUsuario
+    );
     return user ? { id_usuario: user.id_usuario } : null;
   }
 
