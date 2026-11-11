@@ -85,6 +85,22 @@ class UserAuditNotifier {
       newData: sanitizeUser(currentUser),
     });
   }
+
+  async notifyUserUnlocked({ actorContext, previousUser, currentUser }) {
+    await this.post({
+      action: 'desbloquear_usuario',
+      module: 'usuarios',
+      entity: 'usuario',
+      entityId: currentUser.id_usuario,
+      user: this.buildActor(actorContext),
+      detail: {
+        mensaje: 'Cuenta desbloqueada por un administrador',
+        correo: currentUser.correo,
+      },
+      previousData: sanitizeUser(previousUser),
+      newData: sanitizeUser(currentUser),
+    });
+  }
 }
 
 module.exports = { UserAuditNotifier };

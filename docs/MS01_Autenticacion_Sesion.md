@@ -40,6 +40,10 @@ mayúsculas. Por compatibilidad también se aceptan `correo` y `nombre_usuario`.
   por defecto 3) la cuenta se bloquea `tiempo_bloqueo_minutos` (por defecto 15).
   El fin del bloqueo se guarda en `usuarios.bloqueo_hasta`, así que sobrevive a
   reinicios. `bloqueado = true` sin fecha es un bloqueo indefinido (manual).
+- **Desbloqueo manual:** un Administrador puede quitar el bloqueo desde la
+  pantalla Usuarios (botón "Desbloquear", visible solo en cuentas con bloqueo
+  vigente) o con `POST /api/users/:id/desbloquear`. Reinicia los intentos
+  fallidos y se audita como `desbloquear_usuario`.
 - **Cuenta inactiva:** con contraseña incorrecta responde como credencial
   inválida y no acumula intentos; solo con la contraseña correcta revela 403.
 - **Revocación:** logout y refresh guardan el `jti` del token en
@@ -81,5 +85,3 @@ mayúsculas. Por compatibilidad también se aceptan `correo` y `nombre_usuario`.
 
 - MS-02 (user-service) todavía no permite asignar `nombre_usuario` al crear o
   editar usuarios: los usuarios nuevos ingresan con su correo.
-- No hay una acción de administrador para desbloquear una cuenta antes de que
-  venza el bloqueo.

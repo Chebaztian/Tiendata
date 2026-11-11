@@ -10,13 +10,23 @@ function isAdminRole(role) {
   return normalized === 'admin' || normalized === 'administrador';
 }
 
+/**
+ * Un usuario está bloqueado si bloqueado = true y el bloqueo no venció
+ * (bloqueo_hasta NULL = bloqueo indefinido).
+ */
+function isBlockedNow(user, now = Date.now()) {
+  if (!user?.bloqueado) return false;
+  if (!user.bloqueo_hasta) return true;
+  return new Date(user.bloqueo_hasta).getTime() > now;
+}
+
 function sanitizeUser(user) {
   if (!user) {
     return null;
   }
 
   const { contrasena, ...safeUser } = user;
-  return safeUser;
+  return { ...safeUser, bloqueo_vigente: isBlockedNow(user) };
 }
 
 class UserService {
@@ -26,6 +36,7 @@ class UserService {
       notifyUserCreated: async () => {},
       notifyUserUpdated: async () => {},
       notifyUserDisabled: async () => {},
+      notifyUserUnlocked: async () => {},
     },
     bcryptSaltRounds = 10,
   }) {
@@ -154,6 +165,29 @@ class UserService {
 
     return safeUpdated;
   }
+
+  /** Desbloqueo manual por un administrador (MS-01). Idempotente. */
+  async unlockUser(idUsuario, actorContext = {}) {
+    const current = await this.repository.getUserById(idUsuario);
+    if (!current) {
+      throw createHttpError(404, 'USER_NOT_FOUND', 'Usuario no encontrado');
+    }
+
+    const updated = await this.repository.unlockUser(idUsuario);
+    const safeUpdated = sanitizeUser(updated);
+
+    if (typeof this.auditNotifier.notifyUserUnlocked === 'function') {
+      void this.auditNotifier
+        .notifyUserUnlocked({
+          actorContext,
+          previousUser: sanitizeUser(current),
+          currentUser: safeUpdated,
+        })
+        .catch(() => {});
+    }
+
+    return safeUpdated;
+  }
 }
 
-module.exports = { UserService };
+module.exports = { UserService, isBlockedNow };

@@ -125,3 +125,19 @@ export async function disableUser(id, authUser) {
   const body = await parseResponse(res)
   return body.data
 }
+
+// ── POST /api/users/:id/desbloquear ──────────────────────────────
+/**
+ * Quita el bloqueo por intentos fallidos de inicio de sesión (solo Administrador).
+ *
+ * @param {number} id
+ * @returns {Promise<Object>} usuario actualizado (sin contraseña)
+ */
+export async function unlockUser(id) {
+  const res = await fetch(`${BASE}/${id}/desbloquear`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  const body = await parseResponse(res)
+  return body.data
+}

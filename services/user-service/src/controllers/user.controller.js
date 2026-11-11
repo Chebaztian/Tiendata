@@ -55,6 +55,18 @@ class UserController {
     }
   };
 
+  unlockUser = async (req, res, next) => {
+    try {
+      const idUsuario = parseUserId(req.params.id);
+      const actorContext = extractActorContext(req.headers);
+
+      const unlocked = await this.userService.unlockUser(idUsuario, actorContext);
+      res.status(200).json({ success: true, data: unlocked });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   deleteUser = async (req, res, next) => {
     try {
       const idUsuario = parseUserId(req.params.id);

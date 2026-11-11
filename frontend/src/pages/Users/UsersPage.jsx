@@ -13,7 +13,7 @@
 //   - Operador NO tiene acceso a esta página (guard en App.jsx)
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getUsers, createUser, updateUser, disableUser } from '../../api/users'
+import { getUsers, createUser, updateUser, disableUser, unlockUser } from '../../api/users'
 import { useAuth } from '../../hooks/useAuth'
 import './users.css'
 
@@ -90,6 +90,16 @@ function validate(form, isEditing) {
 /* ══════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
 ══════════════════════════════════════════════════════════════════ */
+/** Texto del tooltip de bloqueo: hasta cuándo o si es indefinido. */
+function blockedUntilLabel(bloqueoHasta) {
+  if (!bloqueoHasta) return 'Bloqueo indefinido'
+  const hora = new Date(bloqueoHasta).toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return `Bloqueado hasta las ${hora}`
+}
+
 export default function UsersPage() {
   const { user: authUser } = useAuth()
 
@@ -117,6 +127,9 @@ export default function UsersPage() {
   const [disableError, setDisableError] = useState('')
 
   /* ── Toasts ── */
+  /* Desbloqueo de cuentas */
+  const [unlockingId,  setUnlockingId]  = useState(null)
+
   const [toasts,  setToasts]  = useState([])
   const toastRef = useRef(0)
 
@@ -252,6 +265,19 @@ export default function UsersPage() {
     }
   }
 
+  async function handleUnlock(u) {
+    setUnlockingId(u.id_usuario)
+    try {
+      await unlockUser(u.id_usuario)
+      showToast(`"${u.nombre}" fue desbloqueado.`)
+      fetchUsers()
+    } catch (err) {
+      showToast(mapApiError(err), 'error')
+    } finally {
+      setUnlockingId(null)
+    }
+  }
+
   function pageNumbers() {
     const t = pagination.totalPages
     if (t <= 6) return Array.from({ length: t }, (_, i) => i + 1)
@@ -354,10 +380,21 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td>
+                      <div className="u-status-stack">
                       <span className={`u-badge u-badge--${activo ? 'active' : 'inactive'}`}>
                         <span className="u-badge-dot" />
                         {activo ? 'Activo' : 'Inactivo'}
                       </span>
+                      {u.bloqueo_vigente && (
+                        <span
+                          className="u-badge u-badge--blocked"
+                          title={blockedUntilLabel(u.bloqueo_hasta)}
+                        >
+                          <span className="u-badge-dot" />
+                          Bloqueado
+                        </span>
+                      )}
+                      </div>
                     </td>
                     <td className="u-td-muted">
                       {u.fecha_creacion
@@ -375,6 +412,16 @@ export default function UsersPage() {
                         >
                            Editar
                         </button>
+                        {u.bloqueo_vigente && (
+                          <button
+                            className="u-btn u-btn--warning u-btn--sm"
+                            title={`Quitar el bloqueo por intentos fallidos. ${blockedUntilLabel(u.bloqueo_hasta)}`}
+                            onClick={() => handleUnlock(u)}
+                            disabled={unlockingId === u.id_usuario}
+                          >
+                            {unlockingId === u.id_usuario ? 'Desbloqueando…' : 'Desbloquear'}
+                          </button>
+                        )}
                         <button
                           className="u-btn u-btn--danger u-btn--sm"
                           title={isSelf ? 'No puedes deshabilitarte a ti mismo' : 'Deshabilitar'}

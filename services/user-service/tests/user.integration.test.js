@@ -142,3 +142,54 @@ test('GET /api/users responde por debajo de 1000ms en escenario local', async ()
   assert.equal(response.status, 200);
   assert.equal(elapsedMs < 1000, true);
 });
+
+// ── Desbloqueo de cuentas por el administrador (MS-01) ──────────────────────
+
+test('GET /api/users indica si el bloqueo está vigente', async () => {
+  const { app, repository } = buildTestContext();
+  await repository.updateUserPartial(2, {
+    bloqueado: true,
+    bloqueo_hasta: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+  });
+  await repository.updateUserPartial(3, {
+    bloqueado: true,
+    bloqueo_hasta: new Date(Date.now() - 60 * 1000).toISOString(),
+  });
+
+  const response = await request(app).get('/api/users?page=1&size=10');
+  assert.equal(response.status, 200);
+  const byId = Object.fromEntries(response.body.data.items.map((u) => [u.id_usuario, u]));
+  assert.equal(byId[1].bloqueo_vigente, false);
+  assert.equal(byId[2].bloqueo_vigente, true);
+  assert.equal(byId[3].bloqueo_vigente, false, 'un bloqueo vencido no cuenta como vigente');
+});
+
+test('POST /api/users/:id/desbloquear libera la cuenta y reinicia intentos', async () => {
+  const { app, repository } = buildTestContext();
+  await repository.updateUserPartial(2, {
+    bloqueado: true,
+    bloqueo_hasta: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    intentos_fallidos: 2,
+  });
+
+  const response = await request(app)
+    .post('/api/users/2/desbloquear')
+    .set('x-user-id', '1')
+    .set('x-user-role', 'Administrador');
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.data.bloqueado, false);
+  assert.equal(response.body.data.bloqueo_vigente, false);
+  assert.equal(response.body.data.contrasena, undefined);
+
+  const raw = await repository.getRawById(2);
+  assert.equal(raw.bloqueado, false);
+  assert.equal(raw.bloqueo_hasta, null);
+  assert.equal(raw.intentos_fallidos, 0);
+});
+
+test('POST /api/users/:id/desbloquear devuelve 404 si el usuario no existe', async () => {
+  const { app } = buildTestContext();
+  const response = await request(app).post('/api/users/999/desbloquear');
+  assert.equal(response.status, 404);
+});
