@@ -58,15 +58,18 @@ Gateway único y un frontend en React (Vite).
 
 ## 3. Obtener el código
 
+El trabajo vigente está en la rama **`dev`** (`main` aún tiene la versión
+original del proyecto).
+
 ```bash
-git clone https://github.com/Chebaztian/tiendata.git
+git clone -b dev https://github.com/Chebaztian/tiendata.git
 cd tiendata
 ```
 
-Si ya lo tienes clonado, actualiza la rama `main`:
+Si ya lo tienes clonado, cámbiate a `dev` y actualízala:
 
 ```bash
-git checkout main
+git checkout dev
 git pull
 ```
 
