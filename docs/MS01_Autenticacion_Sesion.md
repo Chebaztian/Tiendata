@@ -1,0 +1,77 @@
+# MS-01 — Autenticación y Sesión
+
+Estado del módulo tras la rama `feature/MS-01-mejoras-login`.
+
+## Flujo
+
+```
+Login (React) ──► API Gateway :3000 ──► auth-service :3002 ──► PostgreSQL
+                     │
+                     └─ en cada ruta protegida llama a GET /api/auth/verify
+                        y aplica el guard de rol (Administrador / Operador)
+```
+
+## Endpoints (`/api/auth`)
+
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| POST | `/login` | — | `{ identificador, contrasena }` → `{ token, id_usuario, nombre, rol, expires_in }` |
+| GET | `/verify` | Bearer | Valida firma, expiración y revocación |
+| POST | `/refresh` | Bearer | Emite un token nuevo y revoca el anterior |
+| POST | `/logout` | Bearer | Revoca el token (exige firma válida; acepta tokens expirados) |
+
+`identificador` puede ser el correo o el nombre de usuario, sin distinguir
+mayúsculas. Por compatibilidad también se aceptan `correo` y `nombre_usuario`.
+
+## Errores
+
+| HTTP | `error.code` | Cuándo | `error.details` |
+|---|---|---|---|
+| 400 | `VALIDATION_ERROR` | Faltan credenciales | — |
+| 401 | `AUTH_INVALID_CREDENTIALS` | Usuario o contraseña incorrectos | `intentos_restantes` |
+| 423 | `AUTH_ACCOUNT_BLOCKED` | Bloqueo por intentos fallidos | `bloqueo_hasta`, `reintentar_en_segundos` |
+| 403 | `AUTH_ACCOUNT_DISABLED` | Cuenta inactiva (solo con contraseña correcta) | — |
+| 401 | `AUTH_TOKEN_MISSING` / `AUTH_TOKEN_INVALID` / `AUTH_TOKEN_EXPIRED` / `AUTH_TOKEN_REVOKED` | Token ausente, inválido, vencido o revocado | — |
+
+## Reglas de seguridad
+
+- **Bloqueo:** tras `max_intentos_login` fallos (tabla `parametros_sistema`,
+  por defecto 3) la cuenta se bloquea `tiempo_bloqueo_minutos` (por defecto 15).
+  El fin del bloqueo se guarda en `usuarios.bloqueo_hasta`, así que sobrevive a
+  reinicios. `bloqueado = true` sin fecha es un bloqueo indefinido (manual).
+- **Cuenta inactiva:** con contraseña incorrecta responde como credencial
+  inválida y no acumula intentos; solo con la contraseña correcta revela 403.
+- **Revocación:** logout y refresh guardan el `jti` del token en
+  `tokens_revocados` hasta su expiración (persistente entre reinicios y
+  compartido entre instancias). Los registros vencidos se limpian solos.
+- **JWT:** HS256, 30 min (`JWT_EXPIRES_IN`). `JWT_SECRET` es obligatorio con
+  `NODE_ENV=production`.
+- **Auditoría (MS-09):** `login_exitoso`, `login_fallido` (con motivo) y `logout`.
+
+## Sesión en el frontend
+
+- El token se guarda en `localStorage` (`tiendata_token`, `tiendata_user`).
+- Al cargar la app se valida con `/verify`; un token vencido se descarta sin
+  llamar al servidor. Si el servidor no responde se conserva la sesión local.
+- Un minuto antes de expirar, si hubo actividad (teclado, ratón, scroll,
+  toque), se renueva con `/refresh`. Sin actividad, la sesión expira y el
+  login muestra "Tu sesión se cerró por inactividad".
+- Cualquier 401 de una llamada autenticada (todas las `src/api/*.js`) cierra la
+  sesión y lleva al login con "Tu sesión expiró".
+- Cerrar sesión o renovar en una pestaña se refleja en las demás.
+
+## Base de datos
+
+`docker/postgres/init/03_auth_sesiones.sql` (idempotente):
+
+- `usuarios.nombre_usuario` (único, sin distinguir mayúsculas; `admin` para el
+  usuario semilla)
+- `usuarios.bloqueo_hasta`
+- tabla `tokens_revocados (jti, id_usuario, revocado_en, expira_en)`
+
+## Pendiente
+
+- MS-02 (user-service) todavía no permite asignar `nombre_usuario` al crear o
+  editar usuarios: los usuarios nuevos ingresan con su correo.
+- No hay una acción de administrador para desbloquear una cuenta antes de que
+  venza el bloqueo.

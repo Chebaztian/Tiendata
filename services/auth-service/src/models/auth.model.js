@@ -1,26 +1,38 @@
-function createHttpError(status, code, message) {
+function createHttpError(status, code, message, details) {
   const error = new Error(message);
   error.status = status;
   error.code = code;
+  if (details !== undefined) error.details = details;
   return error;
 }
 
+/**
+ * Acepta el identificador como `identificador` (preferido), `correo`,
+ * `nombre_usuario` o `nombreUsuario` para mantener compatibilidad.
+ */
 function validateLoginPayload(body) {
   if (!body || typeof body !== 'object') {
     throw createHttpError(400, 'VALIDATION_ERROR', 'El cuerpo de la solicitud es obligatorio');
   }
 
-  const correo = body.correo || body.nombre_usuario || body.nombreUsuario;
+  const rawIdentifier =
+    body.identificador || body.correo || body.nombre_usuario || body.nombreUsuario;
+  const identificador = typeof rawIdentifier === 'string' ? rawIdentifier.trim() : '';
   const { contrasena } = body;
-  if (!correo || !contrasena) {
+
+  if (!identificador || typeof contrasena !== 'string' || contrasena.length === 0) {
     throw createHttpError(
       400,
       'VALIDATION_ERROR',
-      'correo o nombre_usuario y contrasena son obligatorios'
+      'Usuario o correo y contraseña son obligatorios'
     );
   }
 
-  return { correo, contrasena };
+  if (identificador.length > 100 || contrasena.length > 128) {
+    throw createHttpError(400, 'VALIDATION_ERROR', 'Credenciales con longitud no válida');
+  }
+
+  return { identificador, contrasena };
 }
 
 function extractBearerToken(authorizationHeader) {
