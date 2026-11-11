@@ -1,144 +1,154 @@
-# Guía QA — Verificación de MS-01 (Auth Service) + API Gateway
+# Guía QA — Verificación de MS-01 (Autenticación y Sesión) + API Gateway
 
-**Proyecto:** INVENTARIO TIENDATA  
-**Alcance:** Validación técnica del flujo de autenticación y protección de rutas  
-**Última actualización:** 2026-04-04
+**Proyecto:** TIENDATA  
+**Alcance:** login, sesión, bloqueo, revocación, límite por IP y protección de rutas  
+**Última actualización:** 2026-11-11
+
+> Referencia funcional: `docs/MS01_Autenticacion_Sesion.md`.
 
 ---
 
 ## 1) Objetivo
 
-Verificar que la implementación actual de:
-
-- `services/auth-service`
-- `api-gateway`
-
-cumple el contrato funcional mínimo de autenticación, revocación y validación de token, con resultados reproducibles por QA.
+Verificar que `services/auth-service`, `api-gateway`, la gestión de usuarios
+(`services/user-service`) y el frontend cumplen el contrato de autenticación,
+con resultados reproducibles.
 
 ---
 
 ## 2) Precondiciones
 
-1. Tener Node.js 18+ instalado.
-2. Estar ubicado en la raíz del repositorio (`tiendata`).
-3. Ejecutar bootstrap de dependencias:
+1. Docker Desktop y Node.js 20+.
+2. Estar en la raíz del repositorio (`tiendata`).
+3. Entorno levantado:
 
 ```bash
-npm run setup:deps
+docker compose up --build
 ```
 
-4. Variables mínimas recomendadas:
-   - `services/auth-service/.env`
-   - `api-gateway/.env`
+4. Credenciales semilla: usuario `admin` o correo `admin@tiendata.com`, contraseña `Admin1234`.
 
-> Nota: el repositorio ya incluye valores por defecto para pruebas locales.
+> Si el volumen de BD es anterior a `03_auth_sesiones.sql`, aplicarlo (ver README).
 
 ---
 
-## 3) Comando único de verificación
-
-Ejecutar:
+## 3) Pruebas automáticas
 
 ```bash
-npm run verify:all
+npm --prefix services/auth-service test   # 18 pruebas
+npm --prefix services/user-service test   # 15 pruebas
+npm --prefix api-gateway test             # incluye auth, límite por IP y desbloqueo
+npm --prefix frontend test                # sesión, login y API de auth
 ```
 
-Resultado esperado:
+Resultado esperado: sin fallos en auth-service, user-service ni en las pruebas
+de gateway de MS-01 (`gateway-auth`, `login-rate-limit`, `user-unlock`).
 
-- Auth Service: 5 pruebas aprobadas.
-- API Gateway: 3 pruebas aprobadas.
-- Sin fallos.
+> Las 2 pruebas de `ReportsPage.test.jsx` (frontend) fallan desde antes y no
+> corresponden a MS-01.
 
 ---
 
-## 4) Matriz de casos validados automáticamente
+## 4) Matriz de casos automatizados
 
-## 4.1 Auth Service (`services/auth-service/tests/auth.integration.test.js`)
+### 4.1 auth-service (`tests/auth.integration.test.js`)
 
-1. `POST /api/auth/login` con credenciales válidas retorna `200` y token.
-2. Login inválido bloquea cuenta al tercer intento (`423`).
-3. `GET /api/auth/verify` valida token emitido (`200`).
-4. `POST /api/auth/logout` revoca token y `verify` posterior retorna `401`.
-5. `POST /api/auth/refresh` emite nuevo token e invalida token previo.
+| # | Caso | Esperado |
+|---|---|---|
+| 1 | Login con credenciales válidas | 200 + token |
+| 2 | 3 fallos seguidos | 423 `AUTH_ACCOUNT_BLOCKED` |
+| 3 | Verify de token emitido | 200 |
+| 4 | Logout y verify posterior | 401 `AUTH_TOKEN_REVOKED` |
+| 5 | Refresh | token nuevo; el anterior queda revocado |
+| 6 | Login por correo o usuario, sin distinguir mayúsculas | 200 |
+| 7 | Sin identificador o contraseña | 400 `VALIDATION_ERROR` |
+| 8 | Fallo informa intentos restantes | 401 con `details.intentos_restantes` |
+| 9 | Cuenta bloqueada informa minutos reales | 423 con `reintentar_en_segundos` |
+| 10 | Bloqueo vencido | 200 |
+| 11 | Cuenta inactiva | 401 con contraseña errónea (sin sumar intentos), 403 con la correcta |
+| 12 | Logout con firma falsa | 401 `AUTH_TOKEN_INVALID` |
+| 13 | Verify de token expirado / logout de token expirado | 401 `AUTH_TOKEN_EXPIRED` / 200 |
+| 14 | Logout se audita | evento `logout` |
+| 15 | Usuario desactivado con sesión abierta | verify y refresh → 401 `AUTH_ACCOUNT_DISABLED` |
+| 16 | Usuario eliminado con sesión abierta | 401 |
+| 17 | Cambio de rol con sesión abierta | verify y refresh devuelven el rol nuevo |
+| 18 | Bloqueo por intentos con sesión abierta | la sesión sigue válida |
 
-## 4.2 API Gateway (`api-gateway/tests/gateway-auth.integration.test.js`)
+### 4.2 api-gateway
 
-1. Ruta protegida permite acceso con token válido (`200`).
-2. Ruta protegida sin token retorna `401`.
-3. Token revocado por logout es rechazado por gateway (`401`).
+| Archivo | Casos |
+|---|---|
+| `gateway-auth.integration.test.js` | acceso con token válido; 401 sin token; 401 con token revocado |
+| `login-rate-limit.test.js` | 429 + `Retry-After` al superar el máximo; los éxitos no cuentan; los fallos vencen con la ventana; cuentan 401 y 423, no 400 |
+| `user-unlock.routes.test.js` | desbloqueo reenviado con el actor; 403 para Operador |
+
+### 4.3 user-service
+
+Desbloqueo (`bloqueo_vigente`, `POST /:id/desbloquear`, 404), nombre de usuario
+(normalización, opcional, formato, duplicado al crear y editar, quitarlo) y
+política de contraseña.
 
 ---
 
-## 5) Pruebas manuales recomendadas (API)
+## 5) Pruebas manuales (gateway en `http://localhost:3000`)
 
-## 5.1 Iniciar servicios
-
-Terminal 1:
-
-```bash
-cd services/auth-service
-npm start
-```
-
-Terminal 2:
-
-```bash
-cd api-gateway
-npm start
-```
-
-## 5.2 Flujo manual mínimo
-
-1. Login por gateway:
+### 5.1 Login y sesión
 
 ```http
-POST http://localhost:3000/api/auth/login
+POST /api/auth/login
 Content-Type: application/json
 
-{
-  "nombre_usuario": "admin",
-  "contrasena": "Admin1234"
-}
+{ "identificador": "admin", "contrasena": "Admin1234" }
 ```
 
-2. Validar acceso protegido:
+1. Repetir con `"identificador": "ADMIN@tiendata.com"` → 200.
+2. `GET /api/auth/verify` con `Authorization: Bearer <token>` → 200.
+3. `POST /api/auth/logout` con el token → 200; repetir verify → 401 `AUTH_TOKEN_REVOKED`.
+4. Reiniciar el contenedor `tiendata-auth-service` y repetir verify → sigue 401 (revocación persistente).
 
-```http
-GET http://localhost:3000/api/protected/ping
-Authorization: Bearer <token>
-```
+### 5.2 Bloqueo y desbloqueo
 
-3. Cerrar sesión:
+1. Crear un operador desde la pantalla Usuarios.
+2. Iniciar sesión 3 veces con contraseña errónea → la 3.ª responde 423 con minutos restantes.
+3. En Usuarios aparece la etiqueta **Bloqueado**; pulsar **Desbloquear**.
+4. El operador inicia sesión con su contraseña → 200.
 
-```http
-POST http://localhost:3000/api/auth/logout
-Authorization: Bearer <token>
-```
+### 5.3 Usuario desactivado o con rol cambiado
 
-4. Reintentar acceso con mismo token (debe fallar con `401`).
+1. Iniciar sesión como operador en una ventana privada.
+2. Como admin, cambiar su rol a Administrador → en la siguiente petición el operador ya tiene permisos de admin (y viceversa).
+3. Como admin, deshabilitarlo → su siguiente acción lo lleva al login con "Tu cuenta fue deshabilitada".
+
+### 5.4 Límite por IP
+
+Con `LOGIN_MAX_FALLOS_POR_IP=20` (por defecto), hacer 20 logins fallidos con
+cuentas distintas → el siguiente intento, incluso correcto, responde 429
+`AUTH_TOO_MANY_ATTEMPTS` con cabecera `Retry-After`.
+
+### 5.5 Frontend
+
+1. Recargar la página con sesión iniciada → sigue dentro (verify al cargar).
+2. Revocar el token (logout desde otra pestaña) → la otra pestaña vuelve al login.
+3. Dejar la sesión sin actividad 30 min → vuelve al login con "Tu sesión se cerró por inactividad".
 
 ---
 
 ## 6) Criterios de aceptación QA
 
-- [ ] Todas las pruebas automáticas pasan en `verify:all`.
-- [ ] El gateway delega validación a `auth-service` vía `/api/auth/verify`.
-- [ ] Token revocado no autoriza rutas protegidas.
-- [ ] Respuestas de error contienen estructura JSON con `success=false` y bloque `error`.
-- [ ] No se exponen contraseñas ni datos sensibles en respuestas.
+- [ ] Pruebas automáticas de MS-01 sin fallos.
+- [ ] Login por correo y por nombre de usuario.
+- [ ] Bloqueo, revocación y desbloqueo persisten tras reiniciar servicios.
+- [ ] Usuario desactivado pierde la sesión; cambio de rol se aplica sin re-login.
+- [ ] Límite por IP responde 429 con `Retry-After`.
+- [ ] Errores con `success=false` y bloque `error { code, message, details? }`.
+- [ ] Ninguna respuesta expone contraseñas ni hashes.
 
 ---
 
-## 7) Riesgos y observaciones actuales
+## 7) Limitaciones conocidas
 
-1. El repositorio contiene más servicios en estado de plantilla (sin pruebas).
-2. La cobertura de este ciclo se limita a MS-01 + Gateway.
-3. Falta integrar pruebas de extremo a extremo con frontend real.
-
----
-
-## 8) Evidencia esperada para cierre QA
-
-- Salida de consola de `npm run verify:all` con 8/8 pruebas aprobadas.
-- Registro de prueba manual del flujo login → ruta protegida → logout → rechazo.
-- Capturas de respuesta HTTP (códigos y cuerpo) para auditoría del sprint.
+1. El token se guarda en `localStorage` (no en cookie `HttpOnly`).
+2. No hay recuperación de contraseña por correo.
+3. El límite por IP vive en memoria de cada instancia del gateway; detrás de un
+   proxy inverso, todas las peticiones pueden compartir IP.
+4. HTTPS se configura en el despliegue.
