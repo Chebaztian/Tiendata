@@ -5,6 +5,13 @@
 **Fecha:** 2026-04-04  
 **Estado:** Aprobado para implementación e integración con cliente web
 
+> **Actualización 2026-11-11:** este documento describe la entrega original de abril.
+> El comportamiento vigente de MS-01 (login por correo o usuario, bloqueo y
+> revocación persistentes, sesiones de usuarios desactivados, desbloqueo por el
+> administrador, límite de intentos por IP y sesión en el frontend) está en
+> `docs/MS01_Autenticacion_Sesion.md`, y su verificación en
+> `docs/QA_Guia_Verificacion_MS01_Gateway.md`.
+
 ---
 
 ## 1) Resumen Ejecutivo

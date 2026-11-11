@@ -16,10 +16,12 @@ async function proxyToAuthService(req, res, authServiceUrl, endpoint, method) {
   return res.status(response.status).json(data);
 }
 
-function createAuthRoutes({ authServiceUrl }) {
+const passThrough = (_req, _res, next) => next();
+
+function createAuthRoutes({ authServiceUrl, loginRateLimiter = passThrough }) {
   const router = Router();
 
-  router.post('/login', (req, res, next) =>
+  router.post('/login', loginRateLimiter, (req, res, next) =>
     proxyToAuthService(req, res, authServiceUrl, '/api/auth/login', 'POST').catch(next)
   );
 

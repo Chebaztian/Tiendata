@@ -14,7 +14,7 @@
  *     correspondiente.
  *
  * Rutas expuestas:
- *   POST  /api/auth/login            público           → MS-01 auth-service
+ *   POST  /api/auth/login            público (límite de fallos por IP) → MS-01 auth-service
  *   POST  /api/auth/logout           JWT               → MS-01 auth-service
  *   POST  /api/auth/refresh          público           → MS-01 auth-service
  *   GET   /api/auth/verify           JWT               → MS-01 auth-service
@@ -73,6 +73,7 @@ const { createServicesConfig } = require('./config/services');
 const { createAuthMiddleware } = require('./middlewares/auth.middleware');
 
 const { createAuthRoutes } = require('./routes/auth.routes');
+const { createLoginRateLimiter } = require('./middlewares/login-rate-limit.middleware');
 const { createUserRoutes } = require('./routes/user.routes');
 const { createCategoryRoutes } = require('./routes/category.routes');
 const { createProductRoutes } = require('./routes/product.routes');
@@ -103,11 +104,20 @@ function createApp(options = {}) {
       fetchImpl,
     });
 
+  // Límite de intentos de login fallidos por IP (configurable por entorno)
+  const loginRateLimiter =
+    options.loginRateLimiter ||
+    createLoginRateLimiter({
+      maxFailures: Number(process.env.LOGIN_MAX_FALLOS_POR_IP) || 20,
+      windowMs: (Number(process.env.LOGIN_VENTANA_MINUTOS) || 15) * 60 * 1000,
+    });
+
   app.use(
     '/api/auth',
     createAuthRoutes({
       authServiceUrl: config.authServiceUrl,
       fetchImpl,
+      loginRateLimiter: loginRateLimiter.middleware || loginRateLimiter,
     })
   );
 

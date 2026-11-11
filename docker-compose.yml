@@ -226,6 +226,8 @@ services:
       dockerfile: api-gateway/Dockerfile
     container_name: tiendata-api-gateway
     environment:
+      LOGIN_MAX_FALLOS_POR_IP: 20
+      LOGIN_VENTANA_MINUTOS: 15
       PORT: 3000
       AUTH_SERVICE_URL: http://auth-service:3002
       PRODUCT_SERVICE_URL: http://product-service:3001

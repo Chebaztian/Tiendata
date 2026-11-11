@@ -40,7 +40,7 @@ export default function Login() {
       navigate(data.data.rol === 'Administrador' ? '/dashboard/admin' : '/dashboard', { replace: true })
     } catch (err) {
       const message = err.message || 'Error desconocido.'
-      setErrorType(err.status === 423 || err.status === 403 ? 'warning' : 'error')
+      setErrorType([403, 423, 429].includes(err.status) ? 'warning' : 'error')
       setErrorMsg(message)
     } finally {
       setIsLoading(false)

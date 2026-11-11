@@ -70,6 +70,8 @@ export async function loginRequest(identificador, contrasena) {
           ? ` Te ${restantes === 1 ? 'queda 1 intento' : `quedan ${restantes} intentos`}.`
           : ''
       error.message = `Usuario, correo o contraseña incorrectos.${extra}`
+    } else if (error.status === 429) {
+      error.message = error.message || 'Demasiados intentos fallidos. Intenta de nuevo más tarde.'
     } else if (error.status === 423) {
       error.message = error.message || 'Cuenta bloqueada. Demasiados intentos fallidos.'
     } else if (error.status === 403) {

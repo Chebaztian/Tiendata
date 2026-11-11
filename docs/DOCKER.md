@@ -83,7 +83,7 @@ docker compose up --build
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"nombre_usuario":"admin","contrasena":"Admin1234"}'
+  -d '{"identificador":"admin","contrasena":"Admin1234"}'
 ```
 
 2. Copiar el `token` de la respuesta y validar:
@@ -97,7 +97,11 @@ curl http://localhost:3000/api/auth/verify \
 
 - `.env` reales no se versionan.
 - Para producción, mover secretos a gestor seguro y no dejar credenciales por defecto.
-- El servicio auth está preparado para migrar de repositorio en memoria a persistencia completa en siguientes iteraciones.
+- El auth-service usa PostgreSQL para usuarios, bloqueos y tokens revocados
+  (requiere `docker/postgres/init/03_auth_sesiones.sql`).
+- `JWT_SECRET` es obligatorio con `NODE_ENV=production`.
+- El gateway limita los logins fallidos por IP con `LOGIN_MAX_FALLOS_POR_IP`
+  (20) y `LOGIN_VENTANA_MINUTOS` (15).
 
 ## Solución de problemas
 

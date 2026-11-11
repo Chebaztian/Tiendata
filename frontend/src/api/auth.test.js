@@ -43,6 +43,20 @@ describe('loginRequest', () => {
     })
   })
 
+  it('en 429 muestra el límite por IP del gateway', async () => {
+    mockFetchOnce(429, {
+      success: false,
+      error: {
+        code: 'AUTH_TOO_MANY_ATTEMPTS',
+        message: 'Demasiados intentos fallidos desde esta red. Intenta de nuevo en 12 minutos',
+      },
+    })
+    await expect(loginRequest('admin', 'x')).rejects.toMatchObject({
+      status: 429,
+      message: 'Demasiados intentos fallidos desde esta red. Intenta de nuevo en 12 minutos',
+    })
+  })
+
   it('sin conexión devuelve un mensaje claro', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))))
     await expect(loginRequest('admin', 'x')).rejects.toMatchObject({
