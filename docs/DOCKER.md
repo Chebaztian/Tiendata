@@ -1,124 +1,67 @@
-# Guía Docker — TIENDATA Backend MS-01
+# Guía Docker — TIENDATA
 
-## Objetivo
+> El paso a paso para arrancar el proyecto está en el `README.md`. Este
+> documento describe cómo están armados los contenedores.
 
-Levantar un entorno reproducible para backend usando contenedores:
+## Contenedores
 
-- API Gateway
-- Auth Service (MS-01)
-- PostgreSQL
+`docker-compose.yml` define el proyecto `tiendata` con 12 contenedores:
 
-## Servicios definidos
+| Servicio | Contenedor | Puerto host → contenedor | Construcción |
+|---|---|---|---|
+| `postgres` | `tiendata-postgres` | 5433 → 5432 | imagen `postgres:16-alpine` |
+| `auth-service` | `tiendata-auth-service` | 3002 | `services/auth-service` |
+| `user-service` | `tiendata-user-service` | 3004 | `services/user-service` |
+| `product-service` | `tiendata-product-service` | 3001 | raíz + `services/product-service/Dockerfile` |
+| `category-service` | `tiendata-category-service` | 3003 | raíz + `services/category-service/Dockerfile` |
+| `inventory-service` | `tiendata-inventory-service` | 3005 | raíz + `services/inventory-service/Dockerfile` |
+| `audit-service` | `tiendata-audit-service` | 3006 | raíz + `services/audit-service/Dockerfile` |
+| `export-service` | `tiendata-export-service` | 3007 | raíz + `services/export-service/Dockerfile` |
+| `supplier-service` | `tiendata-supplier-service` | 3008 | raíz + `services/supplier-service/Dockerfile` |
+| `config-service` | `tiendata-config-service` | 3009 | raíz + `services/config-service/Dockerfile` |
+| `barcode-service` | `tiendata-barcode-service` | 3010 | raíz + `services/barcode-service/Dockerfile` |
+| `api-gateway` | `tiendata-api-gateway` | 3000 | raíz + `api-gateway/Dockerfile` |
 
-### `api-gateway`
-- Puerto host: `3000`
-- Dependencia: `auth-service`
-- Variable clave: `AUTH_SERVICE_URL=http://auth-service:3002`
+- Los servicios que se construyen desde la raíz copian también `shared/`. El
+  `.dockerignore` de la raíz excluye `node_modules`, `frontend`, `.git` y los
+  `.env` para que la construcción sea rápida y no copie secretos.
+- Todos los microservicios esperan a que `postgres` esté `healthy`
+  (`pg_isready`) antes de arrancar.
+- Dentro de la red de Docker los servicios se llaman por nombre
+  (`http://auth-service:3002`, `postgres:5432`).
 
-### `auth-service`
-- Puerto host: `3002`
-- Dependencia: `postgres`
-- Variables JWT y credenciales demo incluidas en compose para entorno local
+## Base de datos
 
-### `postgres`
-- Imagen: `postgres:16-alpine`
-- Puerto host: `5433` (interno del contenedor: `5432`)
-- Volumen persistente: `tiendata_pg_data`
-- Inicialización automática con backup: `docker/postgres/init/01_backup_tiendatabd.sql`
+- Volumen persistente: `tiendata_pg_data`.
+- `./docker/postgres/init` se monta en `/docker-entrypoint-initdb.d`: los
+  scripts `01` a `07` se ejecutan en orden **solo** cuando el volumen está
+  vacío. Para recrear la BD: `docker compose down -v` y `docker compose up -d --build`.
+- Conexión desde el host (p. ej. pgAdmin o DBeaver): `localhost:5433`,
+  usuario `postgres`, contraseña `tiendata`, base `tiendata`.
+- El dump original se generó en PostgreSQL 18 y se ajustó para la imagen 16;
+  se usa el usuario `postgres` por las sentencias `OWNER TO postgres`.
 
-## Inicialización de base de datos desde backup
+## Configuración relevante
 
-El servicio PostgreSQL ejecuta automáticamente los scripts ubicados en:
+| Variable | Servicio | Valor por defecto |
+|---|---|---|
+| `JWT_SECRET` | auth-service | `tiendata-dev-secret` (obligatorio con `NODE_ENV=production`) |
+| `JWT_EXPIRES_IN` | auth-service | `30m` |
+| `LOGIN_MAX_FALLOS_POR_IP` / `LOGIN_VENTANA_MINUTOS` | api-gateway | `20` / `15` |
+| `MS09_AUDIT_WEBHOOK_URL` | auth, user, inventory… | `http://audit-service:3006/api/audit/events` |
 
-`/docker-entrypoint-initdb.d`
+El máximo de intentos por cuenta y el tiempo de bloqueo se leen de la tabla
+`parametros_sistema` (`max_intentos_login`, `tiempo_bloqueo_minutos`) y se
+pueden cambiar desde la pantalla **Configuración**.
 
-En este proyecto se monta:
-
-`./docker/postgres/init:/docker-entrypoint-initdb.d:ro`
-
-Por eso el backup SQL se importa en el primer arranque del contenedor (cuando el volumen de datos está vacío).
-
-## Comandos
-
-### Construir y levantar
-
-```bash
-docker compose up --build
-```
-
-### Levantar en background
-
-```bash
-docker compose up -d --build
-```
-
-### Ver logs
-
-```bash
-docker compose logs -f
-```
-
-### Detener entorno
+## Comandos útiles
 
 ```bash
-docker compose down
+docker compose up -d --build          # construir y levantar en segundo plano
+docker compose ps                     # estado de los contenedores
+docker compose logs -f api-gateway    # logs de un servicio
+docker compose restart auth-service   # reiniciar un servicio
+docker compose down                   # apagar (conserva datos)
+docker compose down -v                # apagar y borrar la BD
+docker exec -it tiendata-postgres psql -U postgres -d tiendata   # consola SQL
 ```
-
-### Detener y borrar datos de PostgreSQL
-
-```bash
-docker compose down -v
-```
-
-Luego, para recrear e importar nuevamente el backup:
-
-```bash
-docker compose up --build
-```
-
-## Prueba rápida de integración
-
-1. Login por gateway:
-
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"identificador":"admin","contrasena":"Admin1234"}'
-```
-
-2. Copiar el `token` de la respuesta y validar:
-
-```bash
-curl http://localhost:3000/api/auth/verify \
-  -H "Authorization: Bearer <TOKEN>"
-```
-
-## Consideraciones
-
-- `.env` reales no se versionan.
-- Para producción, mover secretos a gestor seguro y no dejar credenciales por defecto.
-- El auth-service usa PostgreSQL para usuarios, bloqueos y tokens revocados
-  (requiere `docker/postgres/init/03_auth_sesiones.sql`).
-- `JWT_SECRET` es obligatorio con `NODE_ENV=production`.
-- El gateway limita los logins fallidos por IP con `LOGIN_MAX_FALLOS_POR_IP`
-  (20) y `LOGIN_VENTANA_MINUTOS` (15).
-
-## Solución de problemas
-
-### 1) Error de puerto PostgreSQL ocupado
-
-Si `5432` está ocupado por otro servicio local, este proyecto expone PostgreSQL en `5433` del host.
-
-### 2) El backup no se reimporta
-
-La importación de scripts ocurre solo en inicialización. Ejecutar:
-
-```bash
-docker compose down -v
-docker compose up --build
-```
-
-### 3) Compatibilidad del dump
-
-El backup recibido fue generado en PostgreSQL 18 y se ajustó para ejecutarse en imagen PostgreSQL 16 del proyecto.
-También se usa el usuario `postgres` en el contenedor para mantener compatibilidad con sentencias `OWNER TO postgres` presentes en el dump.
