@@ -1,0 +1,19 @@
+# Contexto de construcción para los servicios que usan "context: ." en
+# docker-compose.yml (gateway y la mayoría de microservicios).
+# Cada Dockerfile solo copia shared/, api-gateway/ o services/<servicio>/.
+
+**/node_modules
+**/npm-debug.log*
+**/coverage
+**/tests
+
+# Secretos locales: la configuración llega por docker-compose.yml
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+frontend
+docs
+docker
+scripts
